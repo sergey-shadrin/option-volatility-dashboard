@@ -143,7 +143,7 @@ function initChart(chartData) {
     });
     const pointRadius = 8;
     const pointHoverRadius = pointRadius + 1;
-    const ctx = document.getElementById('myChart');
+    const ctx = document.getElementById('volatilityChart');
 
     g_chart = new Chart(ctx, {
       type: 'line',

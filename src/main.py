@@ -18,7 +18,6 @@ app.json_provider_class.compact = False
 BASE_ASSET_CODE = 'SiH4'
 STRIKES_COUNT = 11
 STRIKE_STEP = 1000
-OPTIONS_EXPIRATION_DATE = datetime(2024, 3, 21).date()
 MOEX_OPTIONS_LIST_URL = 'https://iss.moex.com/iss/statistics/engines/futures/markets/options/series/Si-3.24M210324XA/securities.json'
 # TODO: secret config client token must be taken from env
 ALOR_REFRESH_TOKEN_URL = 'https://oauth.alor.ru/refresh'
@@ -66,26 +65,12 @@ def get_chart_js():
 
 
 def get_time_to_option_maturity():
-    # TODO: считать не по дням, а по минутам
-    #  ДО 18:50 даты экспирация
-    days_in_year = 366  # TODO: определение, високосный ли год
-    difference = OPTIONS_EXPIRATION_DATE - datetime.now().date()
-    return difference.days / days_in_year
+    # TODO: учитывать точность до минут, когда даты экспирации опционов будут зависеть от серии
+    options_expiration_date = datetime(2024, 3, 21, 18, 50)
 
-
-def get_implied_volatility(asset_price, strike_price, exchange_volatility, option_type):
-    # parameters
-    S = asset_price
-    K = strike_price
-    T = get_time_to_option_maturity()
-    r = 0.16  # risk-free interest rate
-    # TODO: where to get vol? is it from stock?
-    vol = exchange_volatility / 100  # implied volatility
-
-    C = option_price(S, vol, K, T, r, option_type)  # target price
-
-    tol = 10 ** -8
-    return implied_vol(C, S, K, r, T, tol, option_type) * 100
+    difference = options_expiration_date - datetime.now()
+    seconds_in_year = 365 * 24 * 60 * 60
+    return difference.total_seconds() / seconds_in_year
 
 
 def get_iv_for_option_price(asset_price, strike_price, opt_price, option_type):
