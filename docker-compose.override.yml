@@ -1,0 +1,9 @@
+# This file is suitable for local development
+
+version: "3"
+services:
+  option_volatility_api:
+    stdin_open: true
+    tty: true
+    volumes:
+      - "$PWD/src:/app"
