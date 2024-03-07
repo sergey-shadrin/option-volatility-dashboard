@@ -197,6 +197,11 @@ function initChart() {
       },
       options: {
         animation: false,
+        interaction: {
+          intersect: false,
+          mode: 'nearest',
+          axis: 'x',
+        },
         scales: {
             x: {
                 grid: {
@@ -211,9 +216,21 @@ function initChart() {
         },
         plugins: {
           'draw_vertical_line': {
-          }
+          },
+          legend: {
+            labels: {
+              usePointStyle: true,
+            },
+          },
+          tooltip: {
+            backgroundColor: 'rgba(107, 107, 107, 0.8)',
+            usePointStyle: true,
+            position: 'nearest',
+            xAlign: 'center',
+            yAlign: 'bottom',
+          },
         },
-      },
+      }
     });
 }
 

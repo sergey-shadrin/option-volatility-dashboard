@@ -12,6 +12,7 @@ from implied_volatility import implied_vol, option_price, OPTION_TYPE_CALL, OPTI
 from datetime import datetime
 
 
+# TODO: serve static files via nginx
 app = Flask(__name__)
 app.json_provider_class.compact = False
 
@@ -50,18 +51,6 @@ def get_model():
 @app.route('/chart.json', methods=['GET'])
 def get_diagram_data():
     return jsonify(prepare_data_for_diagram())
-
-
-# TODO: serve static files via nginx
-@app.route('/chart.html', methods=['GET'])
-def get_chart():
-    return render_template('chart.html')
-
-
-# TODO: serve static files via nginx
-@app.route('/volatility_chart.js', methods=['GET'])
-def get_chart_js():
-    return render_template('volatility_chart.js')
 
 
 def get_time_to_option_maturity():
@@ -128,7 +117,6 @@ def prepare_data_for_diagram():
             'put_bid': put_bid,  # for debug
             'put_ask': put_ask,  # for debug
         })
-
 
     return {
         'strikes': strikes_data,
