@@ -80,6 +80,12 @@ def get_iv_for_option_price(asset_price, strike_price, opt_price, option_type):
 def prepare_data_for_diagram():
     # TODO: Пересчитывать данные по волатильностям, как только пришли новые данные с биржи, а не когда они запрашиваются
     #   для отображения
+    # Нужна доп. структура данных volatilities
+    # Вложенная в каждый опцион, который входит в список для выборки
+    # Структура данных обновляется при событиях:
+    # Изменения котировок опционов - пересчитывается для конкретного опциона
+    # Изменения котировок базового актива - пересчитываются волатильности для всех опционов из выборки
+    # Вычислять новые волатильности только если имели место изменения соответствующих параметров, влияющих на изменения
     strikes_data = []
     last_price = g_model['base_asset']['quotes']['data']['last_price']
     for strike in g_model['list_of_strikes']:
@@ -166,7 +172,6 @@ def get_env_or_exit(var_name):
 
 def get_alor_authorization_token():
 
-    # alor_client_token = '5059ee3f-882c-4e50-a848-6b748ff0f89c'
     alor_client_token = get_env_or_exit('ALOR_CLIENT_TOKEN')
     params = {'token': alor_client_token}
 
