@@ -178,17 +178,13 @@ def subscribe_to_option_quotes(option_from_model):
     g_async_queue.put_nowait(quotes_subscribe_json)
 
 
-def subscribe_to_option_data(option_from_model):
-    if 'quotes' not in option_from_model:
-        subscribe_to_option_quotes(option_from_model)
-    if 'instrument' not in option_from_model:
-        subscribe_to_option_instrument(option_from_model)
-
-
 def subscribe_to_options_data(list_of_strikes):
     for strike in list_of_strikes:
         for option in g_model['options'][strike].values():
-            subscribe_to_option_data(option)
+            if 'quotes' not in option:
+                subscribe_to_option_quotes(option)
+            if 'instrument' not in option:
+                subscribe_to_option_instrument(option)
 
 
 def handle_alor_data(guid, data):
