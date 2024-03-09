@@ -48,7 +48,7 @@ def get_model():
 
 @app.route('/chart.json', methods=['GET'])
 def get_diagram_data():
-    return jsonify(prepare_data_for_diagram())
+    return jsonify(retrieve_data_for_diagram())
 
 
 def get_time_to_option_maturity():
@@ -197,8 +197,6 @@ def handle_alor_data(guid, data):
 
     # TODO: Пересчитывать данные по волатильностям, как только пришли новые данные с биржи, а не когда они запрашиваются
     #   для отображения
-    # Нужна доп. структура данных volatilities
-    # Вложенная в каждый опцион, который входит в список для выборки
     # Структура данных обновляется при событиях:
     # Изменения котировок опционов - пересчитывается для конкретного опциона
     # Изменения котировок базового актива - пересчитываются волатильности для всех опционов из выборки
@@ -216,7 +214,12 @@ def handle_alor_data(guid, data):
         subscribe_to_options_data(list_of_strikes)
         if 'last_price' in prev_base_asset_quotes_data and prev_base_asset_quotes_data['last_price'] != last_price:
             print(f'Last price changed! Prev last price: {prev_base_asset_quotes_data['last_price']}, now last price: {last_price}')
-            # TODO: пересчитать волатильности для всех выбранных опционов из списка
+            for strike in g_model['list_of_strikes']:
+                options = g_model['options'][strike]
+                for option_type, option in options.items():
+                    quotes = option['quotes']['data']
+                    option['volatilities']['ask_volatility'] = get_iv_for_option_price(last_price, strike, quotes['ask'], option_type)
+                    option['volatilities']['bid_volatility'] = get_iv_for_option_price(last_price, strike, quotes['bid'], option_type)
 
         base_asset_quotes['data'] = data
     else:
@@ -225,12 +228,13 @@ def handle_alor_data(guid, data):
                 if 'quotes' in option and option['quotes']['guid'] == guid:
                     prev_quotes = option['quotes']['data']
 
-                    # TODO: пересчитывать волатильности конкретного опциона, если менялись данные, от которых они зависят
                     new_quotes = data
                     base_asset_last_price = g_model['base_asset']['quotes']['data']['last_price']
                     option['volatilities']['ask_volatility'] = get_iv_for_option_price(base_asset_last_price, strike, new_quotes['ask'], option_type)
                     option['volatilities']['bid_volatility'] = get_iv_for_option_price(base_asset_last_price, strike, new_quotes['bid'], option_type)
 
+                    # Волатильность по цене последней сделки опциона вычисляется только по факту изменения,
+                    # так как это уже свершившиеся событие, и волатильность по нему не нужно пересчитывать постоянно
                     if 'last_price' not in prev_quotes or prev_quotes['last_price'] != new_quotes['last_price']:
                         option_last_price = new_quotes['last_price']
                         option['volatilities']['last_price_volatility'] = get_iv_for_option_price(base_asset_last_price, strike, option_last_price, option_type)
@@ -240,15 +244,7 @@ def handle_alor_data(guid, data):
                     option['instrument']['data'] = data
 
 
-def prepare_data_for_diagram():
-    # TODO: Пересчитывать данные по волатильностям, как только пришли новые данные с биржи, а не когда они запрашиваются
-    #   для отображения
-    # Нужна доп. структура данных volatilities
-    # Вложенная в каждый опцион, который входит в список для выборки
-    # Структура данных обновляется при событиях:
-    # Изменения котировок опционов - пересчитывается для конкретного опциона
-    # Изменения котировок базового актива - пересчитываются волатильности для всех опционов из выборки
-    # Вычислять новые волатильности только если имели место изменения соответствующих параметров, влияющих на изменения
+def retrieve_data_for_diagram():
     strikes_data = []
     last_price = g_model['base_asset']['quotes']['data']['last_price']
     for strike in g_model['list_of_strikes']:
@@ -345,6 +341,7 @@ def run_flask_app():
 if __name__ == '__main__':
     # Start Flask app in a separate thread
     flask_thread = threading.Thread(target=run_flask_app)
+    flask_thread.daemon = True
     flask_thread.start()
 
     main()
