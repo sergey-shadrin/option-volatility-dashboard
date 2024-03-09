@@ -8,6 +8,7 @@ import json
 import uuid
 import threading
 import random
+import time
 from implied_volatility import implied_vol, option_price, OPTION_TYPE_CALL, OPTION_TYPE_PUT
 from datetime import datetime
 
@@ -194,15 +195,6 @@ def subscribe_to_options_data(list_of_strikes):
 
 
 def handle_alor_data(guid, data):
-
-    # TODO: Пересчитывать данные по волатильностям, как только пришли новые данные с биржи, а не когда они запрашиваются
-    #   для отображения
-    # Структура данных обновляется при событиях:
-    # Изменения котировок опционов - пересчитывается для конкретного опциона
-    # Изменения котировок базового актива - пересчитываются волатильности для всех опционов из выборки
-    # Вычислять новые волатильности только если имели место изменения соответствующих параметров, влияющих на изменения
-    # Добавить пересчет всех волатильностей раз в "таймаут"
-
     base_asset_quotes = g_model['base_asset']['quotes']
     if base_asset_quotes['guid'] == guid:
         print('Base asset quotes event')
@@ -244,6 +236,22 @@ def handle_alor_data(guid, data):
                     option['instrument']['data'] = data
 
 
+def recalculate_volatilities():
+    if 'data' not in g_model['base_asset']['quotes'] or 'list_of_strikes' not in g_model:
+        return
+
+    base_asset_last_price = g_model['base_asset']['quotes']['data']['last_price']
+    for strike in g_model['list_of_strikes']:
+        options = g_model['options'][strike]
+        for option_type, option in options.items():
+            if 'quotes' in option and 'data' in option['quotes']:
+                quotes = option['quotes']['data']
+                option['volatilities']['ask_volatility'] = get_iv_for_option_price(base_asset_last_price, strike, quotes['ask'],
+                                                                                   option_type)
+                option['volatilities']['bid_volatility'] = get_iv_for_option_price(base_asset_last_price, strike, quotes['bid'],
+                                                                                   option_type)
+
+
 def retrieve_data_for_diagram():
     strikes_data = []
     last_price = g_model['base_asset']['quotes']['data']['last_price']
@@ -263,6 +271,7 @@ def retrieve_data_for_diagram():
         'strikes': strikes_data,
         'last_price': last_price,
     }
+
 
 async def consumer(message):
     message_dict = json.loads(message)
@@ -321,7 +330,32 @@ def get_json_to_instrument_subscribe(asset_code, guid):
     return json.dumps(request_data)
 
 
-def main():
+def run_flask_app():
+    # Enable pretty-printing for JSON responses
+    app.run(host='0.0.0.0', port=5000)
+
+
+def call_function_with_timeout():
+    while True:
+        recalculate_volatilities()
+        time.sleep(1)
+
+
+def start_flask_thread():
+    # Start Flask app in a separate thread
+    flask_thread = threading.Thread(target=run_flask_app)
+    flask_thread.daemon = True
+    flask_thread.start()
+
+
+def start_thread_with_timeout():
+    # Create a new thread that calls the function every second
+    thread = threading.Thread(target=call_function_with_timeout)
+    thread.daemon = True
+    thread.start()
+
+
+def subscribe_to_exchange_events():
     g_model['options'] = get_options_from_moex()
     g_alor_auth['token'] = get_alor_authorization_token()
 
@@ -333,15 +367,11 @@ def main():
     asyncio.run(connect_to_alor_websocket(), debug=True)
 
 
-def run_flask_app():
-    # Enable pretty-printing for JSON responses
-    app.run(host='0.0.0.0', port=5000)
+def main():
+    start_flask_thread()
+    start_thread_with_timeout()
+    subscribe_to_exchange_events()
 
 
 if __name__ == '__main__':
-    # Start Flask app in a separate thread
-    flask_thread = threading.Thread(target=run_flask_app)
-    flask_thread.daemon = True
-    flask_thread.start()
-
     main()
