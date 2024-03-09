@@ -79,25 +79,28 @@ function updateChart(chartData) {
     let callLastPriceVolatilities = [];
     let putAskVolatilities = [];
     let putBidVolatilities = [];
+    let putLastPriceVolatilities = [];
     lastPrice = chartData['last_price'];
     strikesData = chartData['strikes'];
     strikesData.map(function(item) {
         labels.push(item['strike']);
         stockVolatilities.push(item['volatility']);
-        callAskVolatilities.push(item['call_ask_volatility']);
-        callBidVolatilities.push(item['call_bid_volatility']);
-        callLastPriceVolatilities.push(item['call_last_price_volatility']);
-        putAskVolatilities.push(item['put_ask_volatility']);
-        putBidVolatilities.push(item['put_bid_volatility']);
+        callAskVolatilities.push(item['call']['ask_volatility']);
+        callBidVolatilities.push(item['call']['bid_volatility']);
+        callLastPriceVolatilities.push(item['call']['last_price_volatility']);
+        putAskVolatilities.push(item['put']['ask_volatility']);
+        putBidVolatilities.push(item['put']['bid_volatility']);
+        putLastPriceVolatilities.push(item['put']['last_price_volatility']);
     });
 
     g_chart.data.labels = labels;
     g_chart.data.datasets[0].data = stockVolatilities;
     g_chart.data.datasets[1].data = callAskVolatilities;
     g_chart.data.datasets[2].data = callBidVolatilities;
-    g_chart.data.datasets[3].data = putAskVolatilities;
-    g_chart.data.datasets[4].data = putBidVolatilities;
-    g_chart.data.datasets[5].data = callLastPriceVolatilities;
+    g_chart.data.datasets[3].data = callLastPriceVolatilities;
+    g_chart.data.datasets[4].data = putAskVolatilities;
+    g_chart.data.datasets[5].data = putBidVolatilities;
+    g_chart.data.datasets[6].data = putLastPriceVolatilities;
     g_chart.options.plugins['draw_vertical_line'].lineX = lastPrice;
     g_chart.update();
 }
@@ -107,7 +110,7 @@ function initChart() {
     Chart.register(verticalLinePlugin);
 
     const pointRadius = 8;
-    const pointHoverRadius = pointRadius + 1;
+    const pointHoverRadius = pointRadius + 4;
     const ctx = document.getElementById('volatilityChart');
 
     return new Chart(ctx, {
@@ -151,6 +154,20 @@ function initChart() {
             }
           }
         }, {
+          label: 'Call Last Price',
+          data: [],
+          fill: false,
+          showLine: false,
+          borderColor: '#c0ab1e',
+          elements: {
+            point: {
+                radius: pointRadius / 2,
+                hoverRadius: pointHoverRadius,
+                backgroundColor: '#c0ab1e',
+                pointStyle: 'circle',
+            }
+          }
+        }, {
           label: 'Put Ask',
           data: [],
           fill: false,
@@ -180,14 +197,14 @@ function initChart() {
             }
           }
         }, {
-          label: 'Call Last Price',
+          label: 'Put Last Price',
           data: [],
           fill: false,
           showLine: false,
           borderColor: 'rgb(255, 255, 0)',
           elements: {
             point: {
-                radius: pointRadius     / 2,
+                radius: pointRadius / 2,
                 hoverRadius: pointHoverRadius,
                 backgroundColor: 'rgb(255, 255, 0)',
                 pointStyle: 'circle',

@@ -33,14 +33,12 @@ g_model = {
     },
     'options': {}
 }
-g_guid_links = {}
 g_async_queue = asyncio.Queue()
 
 
 def get_guid_dict():
     guid = str(uuid.uuid4())
-    g_guid_links[guid] = {'guid': guid, 'data': {}}
-    return guid, g_guid_links[guid]
+    return guid, {'guid': guid, 'data': {}}
 
 
 @app.route('/model', methods=['GET'])
@@ -77,59 +75,6 @@ def get_iv_for_option_price(asset_price, strike_price, opt_price, option_type):
     return iv * 100
 
 
-def prepare_data_for_diagram():
-    # TODO: Пересчитывать данные по волатильностям, как только пришли новые данные с биржи, а не когда они запрашиваются
-    #   для отображения
-    # Нужна доп. структура данных volatilities
-    # Вложенная в каждый опцион, который входит в список для выборки
-    # Структура данных обновляется при событиях:
-    # Изменения котировок опционов - пересчитывается для конкретного опциона
-    # Изменения котировок базового актива - пересчитываются волатильности для всех опционов из выборки
-    # Вычислять новые волатильности только если имели место изменения соответствующих параметров, влияющих на изменения
-    strikes_data = []
-    last_price = g_model['base_asset']['quotes']['data']['last_price']
-    for strike in g_model['list_of_strikes']:
-        call_option_data = g_model['options'][strike]['C']
-        put_option_data = g_model['options'][strike]['P']
-        volatility = call_option_data['instrument']['data']['volatility']
-        call_ask = call_option_data['quotes']['data']['ask']
-        call_bid = call_option_data['quotes']['data']['bid']
-        call_last_price = call_option_data['quotes']['data']['last_price']
-        put_ask = put_option_data['quotes']['data']['ask']
-        put_bid = put_option_data['quotes']['data']['bid']
-
-        call_ask_volatility = get_iv_for_option_price(last_price, strike, call_ask, OPTION_TYPE_CALL)
-        call_bid_volatility = get_iv_for_option_price(last_price, strike, call_bid, OPTION_TYPE_CALL)
-
-        if 'processed_last_price' in call_option_data and call_option_data['processed_last_price'] == call_last_price:
-            call_last_price_volatility = call_option_data['computed_last_price_volatility']
-        else:
-            call_last_price_volatility = get_iv_for_option_price(last_price, strike, call_last_price, OPTION_TYPE_CALL)
-            call_option_data['processed_last_price'] = call_last_price
-            call_option_data['computed_last_price_volatility'] = call_last_price_volatility
-
-        put_ask_volatility = get_iv_for_option_price(last_price, strike, put_ask, OPTION_TYPE_PUT)
-        put_bid_volatility = get_iv_for_option_price(last_price, strike, put_bid, OPTION_TYPE_PUT)
-        strikes_data.append({
-            'strike': strike,
-            'volatility': volatility,
-            'call_ask_volatility': call_ask_volatility,
-            'call_bid_volatility': call_bid_volatility,
-            'call_last_price_volatility': call_last_price_volatility,
-            'put_ask_volatility': put_ask_volatility,
-            'put_bid_volatility': put_bid_volatility,
-            'call_last_price': call_last_price,  # for debug
-            'call_ask': call_ask,  # for debug
-            'put_bid': put_bid,  # for debug
-            'put_ask': put_ask,  # for debug
-        })
-
-    return {
-        'strikes': strikes_data,
-        'last_price': last_price,
-    }
-
-
 def populate_options_dict(response_data):
     securities_columns = response_data['securities']['columns']
     securities_data = response_data['securities']['data']
@@ -149,7 +94,7 @@ def populate_options_dict(response_data):
             if strike not in options_dict:
                 options_dict[strike] = {}
 
-            options_dict[strike][option_type] = {'moex_data': security_dict}
+            options_dict[strike][option_type] = {'moex_data': security_dict, 'volatilities': {}}
     return options_dict
 
 
@@ -171,7 +116,6 @@ def get_env_or_exit(var_name):
 
 
 def get_alor_authorization_token():
-
     alor_client_token = get_env_or_exit('ALOR_CLIENT_TOKEN')
     params = {'token': alor_client_token}
 
@@ -249,20 +193,80 @@ def subscribe_to_options_data(list_of_strikes):
         subscribe_to_option_data(put_option)
 
 
-def handle_base_asset_data(data):
-    last_price = data['last_price']
-    central_strike = calculate_central_strike(last_price)
-    list_of_strikes = get_list_of_strikes(central_strike)
-    g_model['list_of_strikes'] = list_of_strikes
-    subscribe_to_options_data(list_of_strikes)
-
-
 def handle_alor_data(guid, data):
-    g_guid_links[guid]['data'] = data
-    base_asset_quotes_guid = g_model['base_asset']['quotes']['guid']
-    if guid == base_asset_quotes_guid:
-        handle_base_asset_data(data)
 
+    # TODO: Пересчитывать данные по волатильностям, как только пришли новые данные с биржи, а не когда они запрашиваются
+    #   для отображения
+    # Нужна доп. структура данных volatilities
+    # Вложенная в каждый опцион, который входит в список для выборки
+    # Структура данных обновляется при событиях:
+    # Изменения котировок опционов - пересчитывается для конкретного опциона
+    # Изменения котировок базового актива - пересчитываются волатильности для всех опционов из выборки
+    # Вычислять новые волатильности только если имели место изменения соответствующих параметров, влияющих на изменения
+    # Добавить пересчет всех волатильностей раз в "таймаут"
+
+    base_asset_quotes = g_model['base_asset']['quotes']
+    if base_asset_quotes['guid'] == guid:
+        print('Base asset quotes event')
+        prev_base_asset_quotes_data = base_asset_quotes['data']
+        last_price = data['last_price']
+        central_strike = calculate_central_strike(last_price)
+        list_of_strikes = get_list_of_strikes(central_strike)
+        g_model['list_of_strikes'] = list_of_strikes
+        subscribe_to_options_data(list_of_strikes)
+        if 'last_price' in prev_base_asset_quotes_data and prev_base_asset_quotes_data['last_price'] != last_price:
+            print(f'Last price changed! Prev last price: {prev_base_asset_quotes_data['last_price']}, now last price: {last_price}')
+            # TODO: пересчитать волатильности для всех выбранных опционов из списка
+
+        base_asset_quotes['data'] = data
+    else:
+        for strike, options in g_model['options'].items():
+            for option_type, option in options.items():
+                if 'quotes' in option and option['quotes']['guid'] == guid:
+                    prev_quotes = option['quotes']['data']
+
+                    # TODO: пересчитывать волатильности конкретного опциона, если менялись данные, от которых они зависят
+                    new_quotes = data
+                    base_asset_last_price = g_model['base_asset']['quotes']['data']['last_price']
+                    option['volatilities']['ask_volatility'] = get_iv_for_option_price(base_asset_last_price, strike, new_quotes['ask'], option_type)
+                    option['volatilities']['bid_volatility'] = get_iv_for_option_price(base_asset_last_price, strike, new_quotes['bid'], option_type)
+
+                    if 'last_price' not in prev_quotes or prev_quotes['last_price'] != new_quotes['last_price']:
+                        option_last_price = new_quotes['last_price']
+                        option['volatilities']['last_price_volatility'] = get_iv_for_option_price(base_asset_last_price, strike, option_last_price, option_type)
+
+                    option['quotes']['data'] = new_quotes
+                elif 'instrument' in option and option['instrument']['guid'] == guid:
+                    option['instrument']['data'] = data
+
+
+def prepare_data_for_diagram():
+    # TODO: Пересчитывать данные по волатильностям, как только пришли новые данные с биржи, а не когда они запрашиваются
+    #   для отображения
+    # Нужна доп. структура данных volatilities
+    # Вложенная в каждый опцион, который входит в список для выборки
+    # Структура данных обновляется при событиях:
+    # Изменения котировок опционов - пересчитывается для конкретного опциона
+    # Изменения котировок базового актива - пересчитываются волатильности для всех опционов из выборки
+    # Вычислять новые волатильности только если имели место изменения соответствующих параметров, влияющих на изменения
+    strikes_data = []
+    last_price = g_model['base_asset']['quotes']['data']['last_price']
+    for strike in g_model['list_of_strikes']:
+        call_option_data = g_model['options'][strike]['C']
+        put_option_data = g_model['options'][strike]['P']
+        volatility = call_option_data['instrument']['data']['volatility']
+
+        strikes_data.append({
+            'strike': strike,
+            'volatility': volatility,
+            'call': call_option_data['volatilities'],
+            'put': put_option_data['volatilities'],
+        })
+
+    return {
+        'strikes': strikes_data,
+        'last_price': last_price,
+    }
 
 async def consumer(message):
     message_dict = json.loads(message)
