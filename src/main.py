@@ -21,7 +21,6 @@ BASE_ASSET_CODE = 'SiH4'
 STRIKES_COUNT = 11
 STRIKE_STEP = 1000
 MOEX_OPTIONS_LIST_URL = 'https://iss.moex.com/iss/statistics/engines/futures/markets/options/series/Si-3.24M210324XA/securities.json'
-# TODO: secret config client token must be taken from env
 ALOR_REFRESH_TOKEN_URL = 'https://oauth.alor.ru/refresh'
 ALOR_WS_URL = 'wss://api.alor.ru/ws'
 
@@ -188,52 +187,61 @@ def subscribe_to_option_data(option_from_model):
 
 def subscribe_to_options_data(list_of_strikes):
     for strike in list_of_strikes:
-        call_option = g_model['options'][strike]['C']
-        put_option = g_model['options'][strike]['P']
-        subscribe_to_option_data(call_option)
-        subscribe_to_option_data(put_option)
+        for option in g_model['options'][strike].values():
+            subscribe_to_option_data(option)
 
 
 def handle_alor_data(guid, data):
     base_asset_quotes = g_model['base_asset']['quotes']
     if base_asset_quotes['guid'] == guid:
-        print('Base asset quotes event')
-        prev_base_asset_quotes_data = base_asset_quotes['data']
-        last_price = data['last_price']
-        central_strike = calculate_central_strike(last_price)
-        list_of_strikes = get_list_of_strikes(central_strike)
-        g_model['list_of_strikes'] = list_of_strikes
-        subscribe_to_options_data(list_of_strikes)
-        if 'last_price' in prev_base_asset_quotes_data and prev_base_asset_quotes_data['last_price'] != last_price:
-            print(f'Last price changed! Prev last price: {prev_base_asset_quotes_data['last_price']}, now last price: {last_price}')
-            for strike in g_model['list_of_strikes']:
-                options = g_model['options'][strike]
-                for option_type, option in options.items():
-                    quotes = option['quotes']['data']
-                    option['volatilities']['ask_volatility'] = get_iv_for_option_price(last_price, strike, quotes['ask'], option_type)
-                    option['volatilities']['bid_volatility'] = get_iv_for_option_price(last_price, strike, quotes['bid'], option_type)
-
-        base_asset_quotes['data'] = data
+        handle_base_asset_quotes_event(base_asset_quotes, data)
     else:
         for strike, options in g_model['options'].items():
             for option_type, option in options.items():
                 if 'quotes' in option and option['quotes']['guid'] == guid:
-                    prev_quotes = option['quotes']['data']
-
-                    new_quotes = data
-                    base_asset_last_price = g_model['base_asset']['quotes']['data']['last_price']
-                    option['volatilities']['ask_volatility'] = get_iv_for_option_price(base_asset_last_price, strike, new_quotes['ask'], option_type)
-                    option['volatilities']['bid_volatility'] = get_iv_for_option_price(base_asset_last_price, strike, new_quotes['bid'], option_type)
-
-                    # Волатильность по цене последней сделки опциона вычисляется только по факту изменения,
-                    # так как это уже свершившиеся событие, и волатильность по нему не нужно пересчитывать постоянно
-                    if 'last_price' not in prev_quotes or prev_quotes['last_price'] != new_quotes['last_price']:
-                        option_last_price = new_quotes['last_price']
-                        option['volatilities']['last_price_volatility'] = get_iv_for_option_price(base_asset_last_price, strike, option_last_price, option_type)
-
-                    option['quotes']['data'] = new_quotes
+                    handle_option_quotes_event(strike, option_type, option, data)
                 elif 'instrument' in option and option['instrument']['guid'] == guid:
                     option['instrument']['data'] = data
+
+
+def handle_base_asset_quotes_event(base_asset_quotes, new_quotes_data):
+    prev_last_price = None
+    if 'last_price' in base_asset_quotes['data']:
+        prev_last_price = base_asset_quotes['data']['last_price']
+    base_asset_quotes['data'] = new_quotes_data
+
+    last_price = new_quotes_data['last_price']
+    update_list_of_strikes(last_price)
+
+    if prev_last_price is not None and prev_last_price != last_price:
+        # TODO: remove debug message
+        print(f'Last price changed! Prev last price: {prev_base_asset_quotes_data['last_price']}, now last price: {last_price}')
+        recalculate_volatilities()
+
+
+def handle_option_quotes_event(strike, option_type, option, new_quotes):
+    base_asset_last_price = g_model['base_asset']['quotes']['data']['last_price']
+    prev_quotes = option['quotes']['data']
+    if 'last_price' not in prev_quotes or prev_quotes['last_price'] != new_quotes['last_price']:
+        # Волатильность по цене последней сделки опциона вычисляется только по факту изменения,
+        # так как это уже свершившиеся событие, и волатильность по нему не нужно пересчитывать постоянно
+        option_last_price = new_quotes['last_price']
+        option['volatilities']['last_price_volatility'] = get_iv_for_option_price(base_asset_last_price, strike,
+                                                                                  option_last_price, option_type)
+
+    option['volatilities']['ask_volatility'] = get_iv_for_option_price(base_asset_last_price, strike, new_quotes['ask'],
+                                                                       option_type)
+    option['volatilities']['bid_volatility'] = get_iv_for_option_price(base_asset_last_price, strike, new_quotes['bid'],
+                                                                       option_type)
+
+    option['quotes']['data'] = new_quotes
+
+
+def update_list_of_strikes(base_asset_last_price):
+    central_strike = calculate_central_strike(base_asset_last_price)
+    list_of_strikes = get_list_of_strikes(central_strike)
+    g_model['list_of_strikes'] = list_of_strikes
+    subscribe_to_options_data(list_of_strikes)
 
 
 def recalculate_volatilities():
