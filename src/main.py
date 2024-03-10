@@ -9,7 +9,7 @@ import uuid
 import threading
 import random
 import time
-from implied_volatility import implied_vol, option_price, OPTION_TYPE_CALL, OPTION_TYPE_PUT
+from implied_volatility import implied_vol
 from datetime import datetime
 
 
