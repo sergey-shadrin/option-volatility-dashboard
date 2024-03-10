@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify
 import requests
 import asyncio
 import websockets
@@ -7,7 +7,6 @@ import os
 import json
 import uuid
 import threading
-import random
 import time
 from implied_volatility import implied_vol
 from datetime import datetime
@@ -211,7 +210,7 @@ def handle_base_asset_quotes_event(base_asset_quotes, new_quotes_data):
 
     if prev_last_price is not None and prev_last_price != last_price:
         # TODO: remove debug message
-        print(f'Last price changed! Prev last price: {prev_base_asset_quotes_data['last_price']}, now last price: {last_price}')
+        print(f'Last price changed! Prev last price: {prev_last_price}, now last price: {last_price}')
         recalculate_volatilities()
 
 
