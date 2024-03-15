@@ -1,53 +1,19 @@
-from flask import Flask, jsonify
-import requests
-import asyncio
-import websockets
 import sys
 import os
-import json
-import uuid
-import threading
-import time
-from implied_volatility import implied_vol
+from app.implied_volatility import implied_vol
+from infrastructure.alor_api import AlorApi
+from model import option_series_type, option_type
+from model.base_asset import BaseAsset
+from model.option import Option
+from model.option_model import OptionModel
+from model.watched_instruments_filter import WatchedInstrumentsFilter
+from view.flask_app import get_flask_app
 from datetime import datetime
+from infrastructure import moex_api
+from view.option_data_request_params import OptionDataRequestParams
 
-
-# TODO: serve static files via nginx
-app = Flask(__name__)
-app.json_provider_class.compact = False
-
-BASE_ASSET_CODE = 'SiH4'
 STRIKES_COUNT = 11
 STRIKE_STEP = 1000
-MOEX_OPTIONS_LIST_URL = 'https://iss.moex.com/iss/statistics/engines/futures/markets/options/series/Si-3.24M210324XA/securities.json'
-ALOR_REFRESH_TOKEN_URL = 'https://oauth.alor.ru/refresh'
-ALOR_WS_URL = 'wss://api.alor.ru/ws'
-
-g_alor_auth = {
-    'token': ''
-}
-g_model = {
-    'base_asset': {
-        'quotes': {}
-    },
-    'options': {}
-}
-g_async_queue = asyncio.Queue()
-
-
-def get_guid_dict():
-    guid = str(uuid.uuid4())
-    return guid, {'guid': guid, 'data': {}}
-
-
-@app.route('/model', methods=['GET'])
-def get_model():
-    return jsonify(g_model)
-
-
-@app.route('/chart.json', methods=['GET'])
-def get_diagram_data():
-    return jsonify(retrieve_data_for_diagram())
 
 
 def get_time_to_option_maturity():
@@ -60,6 +26,10 @@ def get_time_to_option_maturity():
 
 
 def get_iv_for_option_price(asset_price, strike_price, opt_price, option_type):
+    for param in (asset_price, strike_price, opt_price, option_type):
+        if param is None:
+            return None
+
     # parameters
     S = asset_price
     K = strike_price
@@ -74,37 +44,6 @@ def get_iv_for_option_price(asset_price, strike_price, opt_price, option_type):
     return iv * 100
 
 
-def populate_options_dict(response_data):
-    securities_columns = response_data['securities']['columns']
-    securities_data = response_data['securities']['data']
-    options_dict = {}
-    for security_data in securities_data:
-        security_dict = {}
-
-        for i in range(len(securities_columns)):
-            key = securities_columns[i]
-            value = security_data[i]
-            security_dict[key] = value
-
-        is_traded = security_dict['is_traded']
-        if is_traded:
-            strike = security_dict['strike']
-            option_type = security_dict['option_type']
-            if strike not in options_dict:
-                options_dict[strike] = {}
-
-            options_dict[strike][option_type] = {'moex_data': security_dict, 'volatilities': {}}
-    return options_dict
-
-
-def get_options_from_moex():
-    response_object = get_object_from_json_endpoint(MOEX_OPTIONS_LIST_URL)
-    if not response_object:
-        return None
-
-    return populate_options_dict(response_object)
-
-
 def get_env_or_exit(var_name):
     value = os.environ.get(var_name)
 
@@ -112,31 +51,6 @@ def get_env_or_exit(var_name):
         print_error_message_and_exit(f'{var_name} environment variable is not set.')
 
     return value
-
-
-def get_alor_authorization_token():
-    alor_client_token = get_env_or_exit('ALOR_CLIENT_TOKEN')
-    params = {'token': alor_client_token}
-
-    response = get_object_from_json_endpoint(ALOR_REFRESH_TOKEN_URL, 'POST', params)
-    alor_authorization_token = ''
-    if response:
-        alor_authorization_token = response['AccessToken']
-    return alor_authorization_token
-
-
-def get_object_from_json_endpoint(url, method='GET', params={}):
-    response = requests.request(method, url, params=params)
-
-    response_data = None
-    # Check if the request was successful (status code 200)
-    if response.status_code == 200:
-        # Print the response content (JSON data)
-        response_data = response.json()
-    else:
-        # Print an error message if the request was not successful
-        print_error_message_and_exit(f"Error: {response.status_code}")
-    return response_data
 
 
 def print_error_message_and_exit(error_message):
@@ -161,219 +75,224 @@ def get_list_of_strikes(central_strike):
     return strikes
 
 
-def subscribe_to_option_instrument(option_from_model):
-    guid, dict = get_guid_dict()
-    option_from_model['instrument'] = dict
-    asset_code = option_from_model['moex_data']['secid']
-    instrument_subscribe_json = get_json_to_instrument_subscribe(asset_code, guid)
-    g_async_queue.put_nowait(instrument_subscribe_json)
+def get_option_strike(option: Option):
+    return option.strike
 
 
-def subscribe_to_option_quotes(option_from_model):
-    guid, dict = get_guid_dict()
-    option_from_model['quotes'] = dict
-    asset_code = option_from_model['moex_data']['secid']
-    quotes_subscribe_json = get_json_to_quotes_subscribe(asset_code, guid)
-    g_async_queue.put_nowait(quotes_subscribe_json)
+class OptionApp:
 
+    _SUPPORTED_BASE_ASSET_TICKERS = ['SiM4']
 
-def subscribe_to_options_data(list_of_strikes):
-    for strike in list_of_strikes:
-        for option in g_model['options'][strike].values():
-            if 'quotes' not in option:
-                subscribe_to_option_quotes(option)
-            if 'instrument' not in option:
-                subscribe_to_option_instrument(option)
+    def __init__(self):
+        self._model = OptionModel()
+        self._watchedInstrumentsFilter = WatchedInstrumentsFilter()
+        alor_client_token = get_env_or_exit('ALOR_CLIENT_TOKEN')
+        self._alorApi = AlorApi(alor_client_token)
 
+    def start(self):
+        self._prepare_model()
+        self._start_flask_app()
+        self._subscribe_to_base_asset_events()
+        self._alorApi.run_async_connection()
 
-def handle_alor_data(guid, data):
-    base_asset_quotes = g_model['base_asset']['quotes']
-    if base_asset_quotes['guid'] == guid:
-        handle_base_asset_quotes_event(base_asset_quotes, data)
-    else:
-        for strike, options in g_model['options'].items():
-            for option_type, option in options.items():
-                if 'quotes' in option and option['quotes']['guid'] == guid:
-                    handle_option_quotes_event(strike, option_type, option, data)
-                elif 'instrument' in option and option['instrument']['guid'] == guid:
-                    option['instrument']['data'] = data
+    def _subscribe_to_base_asset_events(self):
+        for base_asset in self._model.base_asset_repository.get_all():
+            self._alorApi.subscribe_to_quotes(base_asset.ticker, self._handle_base_asset_quotes_event)
 
+    def _handle_base_asset_quotes_event(self, ticker, data):
+        prev_last_price = None
+        base_asset = self._model.base_asset_repository.get_by_ticker(ticker)
+        if base_asset.last_price is not None:
+            prev_last_price = base_asset.last_price
 
-def handle_base_asset_quotes_event(base_asset_quotes, new_quotes_data):
-    prev_last_price = None
-    if 'last_price' in base_asset_quotes['data']:
-        prev_last_price = base_asset_quotes['data']['last_price']
-    base_asset_quotes['data'] = new_quotes_data
+        base_asset.last_price = data['last_price']
 
-    last_price = new_quotes_data['last_price']
-    update_list_of_strikes(last_price)
+        if prev_last_price is None:
+            self._update_watched_instruments_filter(base_asset)
+        elif prev_last_price != base_asset.last_price:
+            self._update_watched_instruments_filter(base_asset)
+            self._recalculate_volatilities(base_asset)
 
-    if prev_last_price is not None and prev_last_price != last_price:
-        # TODO: remove debug message
-        print(f'Last price changed! Prev last price: {prev_last_price}, now last price: {last_price}')
-        recalculate_volatilities()
+    def _update_watched_instruments_filter(self, base_asset):
+        central_strike = calculate_central_strike(base_asset.last_price)
+        list_of_strikes = get_list_of_strikes(central_strike)
+        options_by_strikes = self._model.option_repository.get_by_strikes(base_asset.ticker, list_of_strikes)
+        for option in options_by_strikes:
+            option_ticker = option.ticker
+            if not self._watchedInstrumentsFilter.has_option_ticker(option):
+                self._alorApi.subscribe_to_quotes(option_ticker, self._handle_option_quotes_event)
+                self._alorApi.subscribe_to_instrument(option_ticker, self._handle_option_instrument_event)
+                self._watchedInstrumentsFilter.add_option_ticker(option_ticker)
 
+    def _handle_option_quotes_event(self, ticker, data):
+        option = self._model.option_repository.get_by_ticker(ticker)
+        base_asset = self._model.base_asset_repository.get_by_ticker(option.base_asset_ticker)
+        base_asset_last_price = base_asset.last_price
+        prev_last_price_of_option = option.last_price
+        strike = option.strike
+        last_price_of_option = data['last_price']
+        if last_price_of_option is not None and (prev_last_price_of_option is None or prev_last_price_of_option != last_price_of_option):
+            # Волатильность по цене последней сделки опциона вычисляется только по факту изменения,
+            # так как это уже свершившиеся событие, и волатильность по нему не нужно пересчитывать постоянно
+            option.last_price_iv = get_iv_for_option_price(base_asset_last_price, strike,
+                                                           last_price_of_option, option.option_type)
 
-def handle_option_quotes_event(strike, option_type, option, new_quotes):
-    base_asset_last_price = g_model['base_asset']['quotes']['data']['last_price']
-    prev_quotes = option['quotes']['data']
-    if 'last_price' not in prev_quotes or prev_quotes['last_price'] != new_quotes['last_price']:
-        # Волатильность по цене последней сделки опциона вычисляется только по факту изменения,
-        # так как это уже свершившиеся событие, и волатильность по нему не нужно пересчитывать постоянно
-        option_last_price = new_quotes['last_price']
-        option['volatilities']['last_price_volatility'] = get_iv_for_option_price(base_asset_last_price, strike,
-                                                                                  option_last_price, option_type)
+        ask = data['ask']
+        bid = data['bid']
+        if ask:
+            option.ask_iv = get_iv_for_option_price(base_asset_last_price, strike,
+                                                    ask,
+                                                    option.option_type)
+        if bid:
+            option.bid_iv = get_iv_for_option_price(base_asset_last_price, strike,
+                                                    bid,
+                                                    option.option_type)
+        option.last_price = last_price_of_option
+        option.ask = ask
+        option.bid = bid
 
-    option['volatilities']['ask_volatility'] = get_iv_for_option_price(base_asset_last_price, strike, new_quotes['ask'],
-                                                                       option_type)
-    option['volatilities']['bid_volatility'] = get_iv_for_option_price(base_asset_last_price, strike, new_quotes['bid'],
-                                                                       option_type)
+    def _handle_option_instrument_event(self, ticker, data):
+        option = self._model.option_repository.get_by_ticker(ticker)
+        option.volatility = data['volatility']
 
-    option['quotes']['data'] = new_quotes
+    def _recalculate_volatilities(self, base_asset):
+        # TODO: оценить трудоёмкость выполнения
+        option_repository = self._model.option_repository
+        watched_option_tickers = self._watchedInstrumentsFilter.option_tickers
+        watched_options_of_base_asset = option_repository.get_by_tickers_for_base_asset(base_asset.ticker,
+                                                                                        watched_option_tickers)
+        for option in watched_options_of_base_asset:
+            option.ask_iv = get_iv_for_option_price(base_asset.last_price, option.strike,
+                                                    option.ask,
+                                                    option.option_type)
+            option.bid_iv = get_iv_for_option_price(base_asset.last_price, option.strike,
+                                                    option.bid,
+                                                    option.option_type)
 
+    def _start_flask_app(self):
+        flask_app = get_flask_app()
+        flask_app.set_option_app(self)
+        flask_app.start_app_in_thread()
 
-def update_list_of_strikes(base_asset_last_price):
-    central_strike = calculate_central_strike(base_asset_last_price)
-    list_of_strikes = get_list_of_strikes(central_strike)
-    g_model['list_of_strikes'] = list_of_strikes
-    subscribe_to_options_data(list_of_strikes)
+    def _prepare_model(self):
+        for base_asset_ticker in self._SUPPORTED_BASE_ASSET_TICKERS:
+            self._populate_model_for_base_asset(base_asset_ticker)
 
+    def _populate_model_for_base_asset(self, base_asset_ticker: str):
+        base_asset = self._init_base_asset_from_moex_api(base_asset_ticker)
+        self._model.base_asset_repository.insert_base_asset(base_asset)
 
-def recalculate_volatilities():
-    if 'data' not in g_model['base_asset']['quotes'] or 'list_of_strikes' not in g_model:
-        return
+        option_series_data = moex_api.get_option_series(base_asset.base_asset_code)
+        for option_series in option_series_data:
+            series_name = str(option_series['name'])
+            if series_name.startswith(base_asset.short_name):
+                self._populate_options_for_series(base_asset, option_series)
 
-    base_asset_last_price = g_model['base_asset']['quotes']['data']['last_price']
-    for strike in g_model['list_of_strikes']:
-        options = g_model['options'][strike]
-        for option_type, option in options.items():
-            if 'quotes' in option and 'data' in option['quotes']:
-                quotes = option['quotes']['data']
-                option['volatilities']['ask_volatility'] = get_iv_for_option_price(base_asset_last_price, strike, quotes['ask'],
-                                                                                   option_type)
-                option['volatilities']['bid_volatility'] = get_iv_for_option_price(base_asset_last_price, strike, quotes['bid'],
-                                                                                   option_type)
+    def _get_option_expiration_datetime(self, base_asset_code: str, series_type: str, expiration_date: str):
+        expiration_datetime = expiration_date + 'T18:50:00'
+        currency_base_asset_codes = ('Si', 'Eu', 'Cn')
+        if base_asset_code in currency_base_asset_codes and series_type == option_series_type.QUARTER:
+            expiration_datetime = expiration_date + 'T14:00:00'
+        return datetime.fromisoformat(expiration_datetime)
 
+    def _populate_options_for_series(self, base_asset: BaseAsset, series_data: dict):
+        series_name = series_data['name']
+        series_type = series_data['series_type']
+        expiration_date = series_data['expiration_date']
 
-def retrieve_data_for_diagram():
-    strikes_data = []
-    last_price = g_model['base_asset']['quotes']['data']['last_price']
-    for strike in g_model['list_of_strikes']:
-        call_option_data = g_model['options'][strike]['C']
-        put_option_data = g_model['options'][strike]['P']
-        volatility = call_option_data['instrument']['data']['volatility']
+        expiration_datetime = self._get_option_expiration_datetime(base_asset.base_asset_code, series_type,
+                                                                   expiration_date)
+        base_asset.add_expiration_datetime(expiration_datetime)
+        option_list_data = moex_api.get_option_list_by_series(series_name)
+        for option_data in option_list_data:
+            self._populate_option_from_option_data(option_data, base_asset.ticker, expiration_datetime)
 
-        strikes_data.append({
-            'strike': strike,
-            'volatility': volatility,
-            'call': call_option_data['volatilities'],
-            'put': put_option_data['volatilities'],
-        })
+    def _populate_option_from_option_data(self, option_data, base_asset_ticker, expiration_datetime):
+        is_traded = option_data['is_traded']
+        if is_traded:
+            ticker = option_data['secid']
+            strike = option_data['strike']
+            option_type = option_data['option_type']
+            option = Option(ticker, base_asset_ticker, expiration_datetime, strike, option_type)
+            self._model.option_repository.insert_option(option)
 
-    return {
-        'strikes': strikes_data,
-        'last_price': last_price,
-    }
+    def _init_base_asset_from_moex_api(self, base_asset_ticker):
+        base_asset = BaseAsset(base_asset_ticker)
+        asset_description_rows = moex_api.get_security_description(base_asset_ticker)
+        for row in asset_description_rows:
+            if row['name'] == 'SHORTNAME':
+                base_asset.short_name = row['value']
+            if row['name'] == 'ASSETCODE':
+                base_asset.base_asset_code = row['value']
+        return base_asset
 
+    def _retrieve_data_for_diagram(self, request_params: OptionDataRequestParams):
+        # TODO: концепт с динамическим обновлением списка "наблюдаемых" инструментов пока не реализован
+        #  из-за трудностей передачи данных между потоками. Метод вызывается из обработчика Flask в другом потоке.
+        #  если вызывать отсюда методы asyncio.Queue() - происходит падение с ошибкой
+        #  "RuntimeError: Non-thread-safe operation invoked on an event loop other than the current one"
 
-async def consumer(message):
-    message_dict = json.loads(message)
-    if 'data' in message_dict and 'guid' in message_dict:
-        guid = message_dict['guid']
-        data = message_dict['data']
-        handle_alor_data(guid, data)
+        # Извлекаем те данные, что уже есть
+        base_asset_ticker = request_params.base_asset_ticker
+        base_asset = self._model.base_asset_repository.get_by_ticker(base_asset_ticker)
+        # TODO: добавить поддержку нескольких серий
+        expiration_date = request_params.expiration_dates[0]
+        watched_option_tickers = self._watchedInstrumentsFilter.option_tickers
 
+        expiration_datetime = datetime.fromisoformat(expiration_date)
+        options = self._model.option_repository.get_by_tickers_and_expiration_date_for_base_asset(base_asset.ticker,
+                                                                                                  watched_option_tickers,
+                                                                                                  expiration_datetime)
 
-async def consumer_handler(websocket):
-    async for message in websocket:
-        await consumer(message)
+        options_sorted_by_strike = sorted(options, key=get_option_strike)
 
+        strikes_dictionary = {}
+        for option in options_sorted_by_strike:
+            if option.strike not in strikes_dictionary:
+                strikes_dictionary[option.strike] = {}
 
-async def producer_handler(websocket):
-    while True:
-        message = await g_async_queue.get()
-        await websocket.send(message)
+            strikes_dictionary[option.strike][option.option_type] = option
 
+        strikes = []
+        for strike, options in strikes_dictionary.items():
+            call_option = options[option_type.CALL]
+            put_option = options[option_type.PUT]
+            strikes.append({
+                'strike': strike,
+                'volatility': call_option.volatility,
+                'call': {
+                    'ask_volatility': call_option.ask_iv,
+                    'bid_volatility': call_option.bid_iv,
+                    'last_price_volatility': call_option.last_price_iv,
+                },
+                'put': {
+                    'ask_volatility': put_option.ask_iv,
+                    'bid_volatility': put_option.bid_iv,
+                    'last_price_volatility': put_option.last_price_iv,
+                },
+            })
 
-async def handler(websocket):
-    consumer_task = asyncio.create_task(consumer_handler(websocket))
-    producer_task = asyncio.create_task(producer_handler(websocket))
-    done, pending = await asyncio.wait(
-        [consumer_task, producer_task],
-        return_when=asyncio.FIRST_COMPLETED,
-    )
-    for task in pending:
-        task.cancel()
+        return {
+            'last_price': base_asset.last_price,
+            'strikes': strikes
+        }
 
+    def dump_model(self):
+        return self._model.dump()
 
-async def connect_to_alor_websocket():
-    async with websockets.connect(ALOR_WS_URL) as websocket:
-        await handler(websocket)
+    def dump_watched_instruments(self):
+        watched_option_tickers = self._watchedInstrumentsFilter.option_tickers
+        watched_options = self._model.option_repository.get_by_tickers(watched_option_tickers)
 
+        return [vars(option) for option in watched_options]
 
-def get_json_to_quotes_subscribe(asset_code, guid):
-    request_data = {
-        "opcode": "QuotesSubscribe",
-        "code": asset_code,
-        "exchange": "MOEX",
-        "guid": guid,
-        "token": g_alor_auth['token']
-    }
-    return json.dumps(request_data)
-
-
-def get_json_to_instrument_subscribe(asset_code, guid):
-    request_data = {
-        "opcode": "InstrumentsGetAndSubscribeV2",
-        "code": asset_code,
-        "exchange": "MOEX",
-        "guid": guid,
-        "token": g_alor_auth['token']
-    }
-    return json.dumps(request_data)
-
-
-def run_flask_app():
-    # Enable pretty-printing for JSON responses
-    app.run(host='0.0.0.0', port=5000)
-
-
-def call_function_with_timeout():
-    while True:
-        recalculate_volatilities()
-        time.sleep(1)
-
-
-def start_flask_thread():
-    # Start Flask app in a separate thread
-    flask_thread = threading.Thread(target=run_flask_app)
-    flask_thread.daemon = True
-    flask_thread.start()
-
-
-def start_thread_with_timeout():
-    # Create a new thread that calls the function every second
-    thread = threading.Thread(target=call_function_with_timeout)
-    thread.daemon = True
-    thread.start()
-
-
-def subscribe_to_exchange_events():
-    g_model['options'] = get_options_from_moex()
-    g_alor_auth['token'] = get_alor_authorization_token()
-
-    base_asset_quotes_guid, base_asset_quotes_dict = get_guid_dict()
-    g_model['base_asset']['quotes'] = base_asset_quotes_dict
-    quotes_subscribe_to_base_asset_json = get_json_to_quotes_subscribe(BASE_ASSET_CODE, base_asset_quotes_guid)
-    g_async_queue.put_nowait(quotes_subscribe_to_base_asset_json)
-
-    asyncio.run(connect_to_alor_websocket(), debug=True)
+    def get_option_diagram_data(self, request_params: OptionDataRequestParams):
+        return self._retrieve_data_for_diagram(request_params)
 
 
 def main():
-    start_flask_thread()
-    start_thread_with_timeout()
-    subscribe_to_exchange_events()
+    option_app = OptionApp()
+    option_app.start()
 
 
 if __name__ == '__main__':

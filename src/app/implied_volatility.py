@@ -42,6 +42,8 @@ def implied_vol(C, S, K, r, T, tol, option_type=OPTION_TYPE_CALL):
     x0 = inflexion_point(S, K, T, r)
     p = option_price(S, x0, K, T, r, option_type)
     v = vega(S, x0, K, T, r, option_type)
+    if not v:
+        return None
 
     while abs((p - C) / v) > tol:
         x0 = x0 - (p - C) / v
