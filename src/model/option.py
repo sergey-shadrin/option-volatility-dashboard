@@ -24,6 +24,11 @@ class Option:
     def base_asset_ticker(self):
         return self._base_asset_ticker
 
+    def get_time_to_maturity(self) -> float:
+        difference = self._expiration_datetime - datetime.now()
+        seconds_in_year = 365 * 24 * 60 * 60
+        return difference.total_seconds() / seconds_in_year
+
     @property
     def expiration_datetime(self):
         return self._expiration_datetime

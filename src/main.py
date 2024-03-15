@@ -14,31 +14,20 @@ from view.option_data_request_params import OptionDataRequestParams
 
 STRIKES_COUNT = 11
 STRIKE_STEP = 1000
+RISK_FREE_INTEREST_RATE = 0  # risk-free interest rate
 
 
-def get_time_to_option_maturity():
-    # TODO: учитывать точность до минут, когда даты экспирации опционов будут зависеть от серии
-    options_expiration_date = datetime(2024, 3, 21, 18, 50)
-
-    difference = options_expiration_date - datetime.now()
-    seconds_in_year = 365 * 24 * 60 * 60
-    return difference.total_seconds() / seconds_in_year
-
-
-def get_iv_for_option_price(asset_price, strike_price, opt_price, option_type):
-    for param in (asset_price, strike_price, opt_price, option_type):
+def get_iv_for_option_price(asset_price: int, option: Option, opt_price: int):
+    strike_price = option.strike
+    for param in (asset_price, strike_price, opt_price, option.option_type):
         if param is None:
             return None
 
     # parameters
-    S = asset_price
-    K = strike_price
-    T = get_time_to_option_maturity()
-    r = 0  # risk-free interest rate
-    C = opt_price
+    time_to_maturity = option.get_time_to_maturity()
 
-    tol = 10 ** -8
-    iv = implied_vol(C, S, K, r, T, tol, option_type)
+    tolerance = 10 ** -8
+    iv = implied_vol(opt_price, asset_price, strike_price, RISK_FREE_INTEREST_RATE, time_to_maturity, tolerance, option.option_type)
     if not iv:
         return None
     return iv * 100
@@ -129,27 +118,22 @@ class OptionApp:
         base_asset = self._model.base_asset_repository.get_by_ticker(option.base_asset_ticker)
         base_asset_last_price = base_asset.last_price
         prev_last_price_of_option = option.last_price
-        strike = option.strike
-        last_price_of_option = data['last_price']
-        if last_price_of_option is not None and (prev_last_price_of_option is None or prev_last_price_of_option != last_price_of_option):
+        option.last_price = data['last_price']
+        option.ask = data['ask']
+        option.bid = data['bid']
+        if option.last_price is not None and (
+                prev_last_price_of_option is None or prev_last_price_of_option != option.last_price):
             # Волатильность по цене последней сделки опциона вычисляется только по факту изменения,
             # так как это уже свершившиеся событие, и волатильность по нему не нужно пересчитывать постоянно
-            option.last_price_iv = get_iv_for_option_price(base_asset_last_price, strike,
-                                                           last_price_of_option, option.option_type)
+            option.last_price_iv = get_iv_for_option_price(base_asset_last_price, option,
+                                                           option.last_price)
 
-        ask = data['ask']
-        bid = data['bid']
-        if ask:
-            option.ask_iv = get_iv_for_option_price(base_asset_last_price, strike,
-                                                    ask,
-                                                    option.option_type)
-        if bid:
-            option.bid_iv = get_iv_for_option_price(base_asset_last_price, strike,
-                                                    bid,
-                                                    option.option_type)
-        option.last_price = last_price_of_option
-        option.ask = ask
-        option.bid = bid
+        if option.ask:
+            option.ask_iv = get_iv_for_option_price(base_asset_last_price, option,
+                                                    option.ask)
+        if option.bid:
+            option.bid_iv = get_iv_for_option_price(base_asset_last_price, option,
+                                                    option.bid)
 
     def _handle_option_instrument_event(self, ticker, data):
         option = self._model.option_repository.get_by_ticker(ticker)
@@ -162,12 +146,10 @@ class OptionApp:
         watched_options_of_base_asset = option_repository.get_by_tickers_for_base_asset(base_asset.ticker,
                                                                                         watched_option_tickers)
         for option in watched_options_of_base_asset:
-            option.ask_iv = get_iv_for_option_price(base_asset.last_price, option.strike,
-                                                    option.ask,
-                                                    option.option_type)
-            option.bid_iv = get_iv_for_option_price(base_asset.last_price, option.strike,
-                                                    option.bid,
-                                                    option.option_type)
+            option.ask_iv = get_iv_for_option_price(base_asset.last_price, option,
+                                                    option.ask)
+            option.bid_iv = get_iv_for_option_price(base_asset.last_price, option,
+                                                    option.bid)
 
     def _start_flask_app(self):
         flask_app = get_flask_app()
@@ -212,8 +194,8 @@ class OptionApp:
         if is_traded:
             ticker = option_data['secid']
             strike = option_data['strike']
-            option_type = option_data['option_type']
-            option = Option(ticker, base_asset_ticker, expiration_datetime, strike, option_type)
+            type = option_data['option_type']
+            option = Option(ticker, base_asset_ticker, expiration_datetime, strike, type)
             self._model.option_repository.insert_option(option)
 
     def _init_base_asset_from_moex_api(self, base_asset_ticker):

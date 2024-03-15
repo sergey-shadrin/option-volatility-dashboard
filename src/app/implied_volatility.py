@@ -45,10 +45,15 @@ def implied_vol(C, S, K, r, T, tol, option_type=OPTION_TYPE_CALL):
     if not v:
         return None
 
-    while abs((p - C) / v) > tol:
+    # infinite loop is possible here, so we count iterations
+    max_iterations = 1000
+    i = 0
+    while abs((p - C) / v) > tol and i < max_iterations:
+        i += 1
         x0 = x0 - (p - C) / v
         p = option_price(S, x0, K, T, r, option_type)
         v = vega(S, x0, K, T, r, option_type)
         if not v:
             return None
+
     return x0
