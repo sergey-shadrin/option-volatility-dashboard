@@ -1,6 +1,6 @@
 import sys
 import os
-from app.implied_volatility import implied_vol
+from app.implied_volatility import _implied_vol, get_iv_for_option_price
 from infrastructure.alor_api import AlorApi
 from model import option_series_type, option_type
 from model.base_asset import BaseAsset
@@ -14,23 +14,6 @@ from view.option_data_request_params import OptionDataRequestParams
 
 STRIKES_COUNT = 11
 STRIKE_STEP = 1000
-RISK_FREE_INTEREST_RATE = 0  # risk-free interest rate
-
-
-def get_iv_for_option_price(asset_price: int, option: Option, opt_price: int):
-    strike_price = option.strike
-    for param in (asset_price, strike_price, opt_price, option.option_type):
-        if param is None:
-            return None
-
-    # parameters
-    time_to_maturity = option.get_time_to_maturity()
-
-    tolerance = 10 ** -8
-    iv = implied_vol(opt_price, asset_price, strike_price, RISK_FREE_INTEREST_RATE, time_to_maturity, tolerance, option.option_type)
-    if not iv:
-        return None
-    return iv * 100
 
 
 def get_env_or_exit(var_name):
@@ -233,7 +216,7 @@ class OptionApp:
             if option.strike not in strikes_dictionary:
                 strikes_dictionary[option.strike] = {}
 
-            strikes_dictionary[option.strike][option.option_type] = option
+            strikes_dictionary[option.strike][option.type] = option
 
         strikes = []
         for strike, options in strikes_dictionary.items():

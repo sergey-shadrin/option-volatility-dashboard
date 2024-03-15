@@ -7,7 +7,7 @@ class Option:
         self._base_asset_ticker = base_asset_ticker
         self._expiration_datetime = expiration_datetime
         self._strike = strike
-        self._option_type = option_type
+        self._type = option_type
         self._bid = None
         self._ask = None
         self._last_price = None
@@ -38,8 +38,8 @@ class Option:
         return self._strike
 
     @property
-    def option_type(self):
-        return self._option_type
+    def type(self):
+        return self._type
 
     @property
     def bid(self):
