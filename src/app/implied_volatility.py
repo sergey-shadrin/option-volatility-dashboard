@@ -6,6 +6,7 @@ from model import option_type
 from model.option import Option
 
 _RISK_FREE_INTEREST_RATE = 0  # risk-free interest rate
+_VOLATILITY_CALCULATION_ITERATIONS_LIMIT = 100
 
 
 def get_iv_for_option_price(asset_price: int, option: Option, opt_price: int):
@@ -14,7 +15,6 @@ def get_iv_for_option_price(asset_price: int, option: Option, opt_price: int):
         if param is None:
             return None
 
-    # parameters
     time_to_maturity = option.get_time_to_maturity()
 
     tolerance = 10 ** -8
@@ -32,15 +32,17 @@ def _implied_vol(C, S, K, r, T, tol, opt_type=option_type.CALL):
         return None
 
     # infinite loop is possible here, so we count iterations
-    max_iterations = 1000
     i = 0
-    while abs((p - C) / v) > tol and i < max_iterations:
+    while abs((p - C) / v) > tol and i < _VOLATILITY_CALCULATION_ITERATIONS_LIMIT:
         i += 1
         x0 = x0 - (p - C) / v
         p = _option_price(S, x0, K, T, r, opt_type)
         v = _vega(S, x0, K, T, r, opt_type)
         if not v:
             return None
+
+    if i >= _VOLATILITY_CALCULATION_ITERATIONS_LIMIT:
+        return None
 
     return x0
 

@@ -165,14 +165,12 @@ class OptionApp:
         # Извлекаем те данные, что уже есть
         base_asset_ticker = request_params.base_asset_ticker
         base_asset = self._model.base_asset_repository.get_by_ticker(base_asset_ticker)
-        # TODO: добавить поддержку нескольких серий
-        expiration_date = request_params.expiration_dates[0]
         watched_option_tickers = self._watchedInstrumentsFilter.option_tickers
 
-        expiration_datetime = datetime.fromisoformat(expiration_date)
-        options = self._model.option_repository.get_by_tickers_and_expiration_date_for_base_asset(base_asset.ticker,
-                                                                                                  watched_option_tickers,
-                                                                                                  expiration_datetime)
+        expiration_datetimes = [datetime.fromisoformat(expiration_date) for expiration_date in request_params.expiration_dates]
+        options = self._model.option_repository.get_by_tickers_and_expiration_dates_for_base_asset(base_asset.ticker,
+                                                                                                   watched_option_tickers,
+                                                                                                   expiration_datetimes)
 
         options_sorted_by_strike = sorted(options, key=_get_option_strike)
 
@@ -181,30 +179,60 @@ class OptionApp:
             if option.strike not in strikes_dictionary:
                 strikes_dictionary[option.strike] = {}
 
-            strikes_dictionary[option.strike][option.type] = option
+            expiration_date_iso_string = option.expiration_datetime.date().isoformat()
+            if expiration_date_iso_string not in strikes_dictionary[option.strike]:
+                strikes_dictionary[option.strike][expiration_date_iso_string] = {}
 
-        strikes = []
-        for strike, options in strikes_dictionary.items():
-            call_option = options[option_type.CALL]
-            put_option = options[option_type.PUT]
-            strikes.append({
-                'strike': strike,
-                'volatility': call_option.volatility,
-                'call': {
-                    'ask_volatility': call_option.ask_iv,
-                    'bid_volatility': call_option.bid_iv,
-                    'last_price_volatility': call_option.last_price_iv,
-                },
-                'put': {
-                    'ask_volatility': put_option.ask_iv,
-                    'bid_volatility': put_option.bid_iv,
-                    'last_price_volatility': put_option.last_price_iv,
-                },
-            })
+            strikes_dictionary[option.strike][expiration_date_iso_string][option.type] = option
+        list_of_labels = []
+        # TODO: сортировка по возрастанию даты экспирации
+
+        strikes_to_labels_dict = {}
+        for strike, strike_dataset in strikes_dictionary.items():
+            strikes_to_labels_dict[strike] = {}
+            for expiration_date, option_pair in strike_dataset.items():
+                for opt_type, option in option_pair.items():
+                    if opt_type == option_type.CALL:
+                        label = f'{expiration_date} Volatility'
+                        strikes_to_labels_dict[strike][label] = option.volatility
+                        if label not in list_of_labels:
+                            list_of_labels.append(label)
+                    type_string = 'Call' if opt_type == option_type.CALL else 'Put'
+                    label_prefix = f'{expiration_date} {type_string}'
+
+                    label = f'{label_prefix} Ask'
+                    strikes_to_labels_dict[strike][label] = option.ask_iv
+                    if label not in list_of_labels:
+                        list_of_labels.append(label)
+
+                    label = f'{label_prefix} Bid'
+                    strikes_to_labels_dict[strike][label] = option.bid_iv
+                    if label not in list_of_labels:
+                        list_of_labels.append(label)
+
+                    label = f'{label_prefix} Last Price'
+                    strikes_to_labels_dict[strike][label] = option.last_price_iv
+                    if label not in list_of_labels:
+                        list_of_labels.append(label)
+
+        list_of_strikes = list(strikes_dictionary.keys())
+
+        view_datasets = []
+        for i in range(len(list_of_labels)):
+            if i not in view_datasets:
+                view_datasets.append([])
+            for j in range(len(list_of_strikes)):
+                label = list_of_labels[i]
+                strike = list_of_strikes[j]
+                value = strikes_to_labels_dict[strike][label]
+                view_datasets[i].append(value)
+
 
         return {
             'last_price': base_asset.last_price,
-            'strikes': strikes
+            'labels': list_of_labels,
+            'strikes': list_of_strikes,
+            'view_datasets': view_datasets,
         }
 
     def dump_model(self):

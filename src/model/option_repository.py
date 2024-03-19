@@ -53,9 +53,16 @@ class OptionRepository:
                 found_options.append(option)
         return found_options
 
-    def get_by_tickers_and_expiration_date_for_base_asset(self, base_asset_ticker: str, option_tickers: [str], expiration_datetime: datetime):
+    def get_by_tickers_and_expiration_dates_for_base_asset(self, base_asset_ticker: str, option_tickers: [str], expiration_datetimes: [datetime]):
         found_options = []
         for option in self._options_list:
-            if option.base_asset_ticker == base_asset_ticker and option.ticker in option_tickers and expiration_datetime.date() == option.expiration_datetime.date():
-                found_options.append(option)
+            if option.base_asset_ticker == base_asset_ticker and option.ticker in option_tickers:
+                is_expiration_date_in_list = False
+                for expiration_datetime in expiration_datetimes:
+                    if expiration_datetime.date() == option.expiration_datetime.date():
+                        is_expiration_date_in_list = True
+
+                if is_expiration_date_in_list:
+                    found_options.append(option)
+
         return found_options

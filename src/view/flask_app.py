@@ -28,7 +28,7 @@ class FlaskApp:
     def get_diagram_data(self):
         request_params = OptionDataRequestParams()
         request_params.base_asset_ticker = 'SiM4'
-        request_params.expiration_dates = ['2024-03-28', '2024-04-04']
+        request_params.expiration_dates = ['2024-03-28', '2024-04-04', '2024-04-18']
         request_params.strikes_count = 11
         request_params.strikes_step = 1000
         result = self._option_app.get_option_diagram_data(request_params)

@@ -1,3 +1,59 @@
+const pointRadius = 8;
+const pointHoverRadius = pointRadius + 4;
+const DEFAULT_SETTINGS_MAP = {
+    'Volatility': {
+        fill: false,
+        cubicInterpolationMode: 'monotone',
+        tension: 0.2,
+        backgroundColor: 'rgba(255, 0, 0, 0.5)',
+        borderColor: 'rgb(255, 0, 0, 0.8)'
+    },
+    'Ask': {
+        hidden: true,
+        fill: false,
+        showLine: false,
+        backgroundColor: 'rgba(255, 0, 0, 0.5)',
+        borderColor: 'rgb(255, 0, 0)',
+        elements: {
+            point: {
+                radius: pointRadius,
+                hoverRadius: pointHoverRadius,
+                rotation: 180,
+                pointStyle: 'triangle',
+            }
+        }
+    },
+    'Bid': {
+        hidden: true,
+        fill: false,
+        showLine: false,
+        backgroundColor: 'rgba(0, 160, 0, 0.5)',
+        borderColor: 'rgb(0, 160, 0)',
+        elements: {
+            point: {
+                radius: pointRadius,
+                hoverRadius: pointHoverRadius,
+                pointStyle: 'triangle',
+            }
+        }
+    },
+    'Last Price': {
+        hidden: true,
+        fill: false,
+        showLine: false,
+        backgroundColor: 'rgba(192, 171, 30, 0.5)',
+        borderColor: 'rgb(192, 171, 30)',
+        elements: {
+            point: {
+                radius: pointRadius / 2,
+                hoverRadius: pointHoverRadius,
+                pointStyle: 'circle',
+            }
+        }
+    }
+}
+
+
 function requestChartData() {
     // Create a new XMLHttpRequest object
     var xhr = new XMLHttpRequest();
@@ -72,145 +128,56 @@ const verticalLinePlugin = {
 };
 
 function updateChart(chartData) {
-    let labels = [];
-    let stockVolatilities = [];
-    let callAskVolatilities = [];
-    let callBidVolatilities = [];
-    let callLastPriceVolatilities = [];
-    let putAskVolatilities = [];
-    let putBidVolatilities = [];
-    let putLastPriceVolatilities = [];
-    lastPrice = chartData['last_price'];
-    strikesData = chartData['strikes'];
-    strikesData.map(function(item) {
-        labels.push(item['strike']);
-        stockVolatilities.push(item['volatility']);
-        callAskVolatilities.push(item['call']['ask_volatility']);
-        callBidVolatilities.push(item['call']['bid_volatility']);
-        callLastPriceVolatilities.push(item['call']['last_price_volatility']);
-        putAskVolatilities.push(item['put']['ask_volatility']);
-        putBidVolatilities.push(item['put']['bid_volatility']);
-        putLastPriceVolatilities.push(item['put']['last_price_volatility']);
-    });
+    let view_datasets = chartData['view_datasets'];
+    if (g_chart.data.datasets.length == 0) {
+        // Init datasets
+        let labels = chartData['labels'];
+        let datasets = [];
+        for (let i = 0; i < labels.length; i++) {
+            let label = labels[i];
+            let view_dataset = view_datasets[i];
+            datasets.push(initDataset(label, view_dataset));
+        }
+        g_chart.data.datasets = datasets;
+    } else {
+        for (let i = 0; i < view_datasets.length; i++) {
+            g_chart.data.datasets[i].data = view_datasets[i];
+        }        
+    }
 
-    g_chart.data.labels = labels;
-    g_chart.data.datasets[0].data = stockVolatilities;
-    g_chart.data.datasets[1].data = callAskVolatilities;
-    g_chart.data.datasets[2].data = callBidVolatilities;
-    g_chart.data.datasets[3].data = callLastPriceVolatilities;
-    g_chart.data.datasets[4].data = putAskVolatilities;
-    g_chart.data.datasets[5].data = putBidVolatilities;
-    g_chart.data.datasets[6].data = putLastPriceVolatilities;
-    g_chart.options.plugins['draw_vertical_line'].lineX = lastPrice;
+
+    g_chart.data.labels = chartData['strikes'];
+    g_chart.options.plugins['draw_vertical_line'].lineX = chartData['last_price'];
     g_chart.update();
+}
+
+function initDataset(label, data) {
+    let datasetByLabel = getSettingsByLabel(label);
+    datasetByLabel.label = label;
+    datasetByLabel.data = data;
+    return datasetByLabel;
+}
+
+function getSettingsByLabel(label) {
+    for (let labelSuffix in DEFAULT_SETTINGS_MAP) {
+        if (DEFAULT_SETTINGS_MAP.hasOwnProperty(labelSuffix) && label.endsWith(labelSuffix)) {
+            let defaultSettings = DEFAULT_SETTINGS_MAP[labelSuffix];
+            return Object.assign({}, defaultSettings);
+        }
+    }
+    return {}
 }
 
 function initChart() {
     Chart.defaults.color = '#ffffff';
     Chart.register(verticalLinePlugin);
 
-    const pointRadius = 8;
-    const pointHoverRadius = pointRadius + 4;
     const ctx = document.getElementById('volatilityChart');
-
     return new Chart(ctx, {
       type: 'line',
       data: {
         labels: [],
-        datasets: [{
-          label: 'Volatility',
-          data: [],
-          fill: false,
-          cubicInterpolationMode: 'monotone',
-          tension: 0.2,
-          borderColor: 'rgb(255, 0, 0)'
-        }, {
-          label: 'Call Ask',
-          data: [],
-          fill: false,
-          showLine: false,
-          borderColor: 'rgb(255, 0, 0)',
-          elements: {
-            point: {
-                radius: pointRadius,
-                hoverRadius: pointHoverRadius,
-                rotation: 180,
-                backgroundColor: 'rgb(255, 0, 0)',
-                pointStyle: 'triangle',
-            }
-          }
-        }, {
-          label: 'Call Bid',
-          data: [],
-          fill: false,
-          showLine: false,
-          borderColor: 'rgb(0, 160, 0)',
-          elements: {
-            point: {
-                radius: pointRadius,
-                hoverRadius: pointHoverRadius,
-                backgroundColor: 'rgb(0, 160, 0)',
-                pointStyle: 'triangle',
-            }
-          }
-        }, {
-          label: 'Call Last Price',
-          data: [],
-          fill: false,
-          showLine: false,
-          borderColor: '#c0ab1e',
-          elements: {
-            point: {
-                radius: pointRadius / 2,
-                hoverRadius: pointHoverRadius,
-                backgroundColor: '#c0ab1e',
-                pointStyle: 'circle',
-            }
-          }
-        }, {
-          label: 'Put Ask',
-          data: [],
-          fill: false,
-          showLine: false,
-          borderColor: 'rgb(255, 160, 160)',
-          elements: {
-            point: {
-                radius: pointRadius,
-                hoverRadius: pointHoverRadius,
-                rotation: 180,
-                backgroundColor: 'rgb(255, 160, 160)',
-                pointStyle: 'triangle',
-            }
-          }
-        }, {
-          label: 'Put Bid',
-          data: [],
-          fill: false,
-          showLine: false,
-          borderColor: 'rgb(0, 255, 0)',
-          elements: {
-            point: {
-                radius: pointRadius,
-                hoverRadius: pointHoverRadius,
-                backgroundColor: 'rgb(0, 255, 0)',
-                pointStyle: 'triangle',
-            }
-          }
-        }, {
-          label: 'Put Last Price',
-          data: [],
-          fill: false,
-          showLine: false,
-          borderColor: 'rgb(255, 255, 0)',
-          elements: {
-            point: {
-                radius: pointRadius / 2,
-                hoverRadius: pointHoverRadius,
-                backgroundColor: 'rgb(255, 255, 0)',
-                pointStyle: 'circle',
-            }
-          }
-        }]
+        datasets: []
       },
       options: {
         animation: false,
@@ -239,6 +206,10 @@ function initChart() {
               usePointStyle: true,
             },
           },
+          title: {
+            display: true,
+            text: 'SiM4',
+          },
           tooltip: {
             backgroundColor: 'rgba(107, 107, 107, 0.8)',
             usePointStyle: true,
@@ -251,6 +222,6 @@ function initChart() {
     });
 }
 
-g_chart = initChart();
+var g_chart = initChart();
 requestChartData();
 setInterval(requestChartData, 3000);
