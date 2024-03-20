@@ -11,6 +11,7 @@ class Option:
         self._bid = None
         self._ask = None
         self._last_price = None
+        self._last_price_timestamp = None
         self._volatility = None
         self._bid_iv = None
         self._ask_iv = None
@@ -64,6 +65,14 @@ class Option:
     @last_price.setter
     def last_price(self, last_price):
         self._last_price = last_price
+
+    @property
+    def last_price_timestamp(self):
+        return self._last_price_timestamp
+
+    @last_price_timestamp.setter
+    def last_price_timestamp(self, last_price_timestamp):
+        self._last_price_timestamp = last_price_timestamp
 
     @property
     def volatility(self):

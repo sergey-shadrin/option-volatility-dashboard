@@ -12,7 +12,7 @@ from datetime import datetime
 from infrastructure import moex_api
 from view.option_data_request_params import OptionDataRequestParams
 
-_MAX_STRIKES_COUNT = 11
+_MAX_STRIKES_COUNT = 5
 _DEFAULT_STRIKE_STEP = 1000
 
 
@@ -64,14 +64,17 @@ class OptionApp:
         option = self._model.option_repository.get_by_ticker(ticker)
         base_asset = self._model.base_asset_repository.get_by_ticker(option.base_asset_ticker)
         base_asset_last_price = base_asset.last_price
-        prev_last_price_of_option = option.last_price
+        prev_last_price_timestamp_of_option = option.last_price_timestamp
+
         option.last_price = data['last_price']
+        option.last_price_timestamp = data['last_price_timestamp']
         option.ask = data['ask']
         option.bid = data['bid']
         if option.last_price is not None and (
-                prev_last_price_of_option is None or prev_last_price_of_option != option.last_price):
-            # Волатильность по цене последней сделки опциона вычисляется только по факту изменения,
-            # так как это уже свершившиеся событие, и волатильность по нему не нужно пересчитывать постоянно
+                prev_last_price_timestamp_of_option is None or prev_last_price_timestamp_of_option != option.last_price_timestamp):
+            # Волатильность по цене последней сделки опциона вычисляется только по факту совершения сделки,
+            # так как это уже свершившиеся событие, и волатильность по нему не нужно пересчитывать постоянно.
+            # При этом возможны сделки по прежней цене, но с другим временем совершения
             option.last_price_iv = get_iv_for_option_price(base_asset_last_price, option,
                                                            option.last_price)
 
@@ -225,7 +228,6 @@ class OptionApp:
                 strike = list_of_strikes[j]
                 value = strikes_to_labels_dict[strike][label]
                 view_datasets[i].append(value)
-
 
         return {
             'last_price': base_asset.last_price,
