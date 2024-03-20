@@ -5,15 +5,11 @@ const DEFAULT_SETTINGS_MAP = {
         fill: false,
         cubicInterpolationMode: 'monotone',
         tension: 0.2,
-        backgroundColor: 'rgba(255, 0, 0, 0.5)',
-        borderColor: 'rgb(255, 0, 0, 0.8)'
     },
     'Ask': {
         hidden: true,
         fill: false,
         showLine: false,
-        backgroundColor: 'rgba(255, 0, 0, 0.5)',
-        borderColor: 'rgb(255, 0, 0)',
         elements: {
             point: {
                 radius: pointRadius,
@@ -27,8 +23,6 @@ const DEFAULT_SETTINGS_MAP = {
         hidden: true,
         fill: false,
         showLine: false,
-        backgroundColor: 'rgba(0, 160, 0, 0.5)',
-        borderColor: 'rgb(0, 160, 0)',
         elements: {
             point: {
                 radius: pointRadius,
@@ -41,8 +35,6 @@ const DEFAULT_SETTINGS_MAP = {
         hidden: true,
         fill: false,
         showLine: false,
-        backgroundColor: 'rgba(192, 171, 30, 0.5)',
-        borderColor: 'rgb(192, 171, 30)',
         elements: {
             point: {
                 radius: pointRadius / 2,
@@ -53,6 +45,125 @@ const DEFAULT_SETTINGS_MAP = {
     }
 }
 
+var g_colorSettings = {
+    'Volatility': {
+        color: {
+            r: 255,
+            g: 0,
+            b: 0,
+        },
+        colorDelta: {
+            r: -64,
+            g: 0,
+            b: 0,
+        },
+    },
+    'Call Ask': {
+        color: {
+            r: 255,
+            g: 0,
+            b: 0,
+        },
+        colorDelta: {
+            r: -64,
+            g: 0,
+            b: 0,
+        },
+    },
+    'Call Bid': {
+        color: {
+            r: 0,
+            g: 160,
+            b: 0,
+        },
+        colorDelta: {
+            r: 0,
+            g: -32,
+            b: 0,
+        },
+    },
+    'Call Last Price': {
+        color: {
+            r: 255,
+            g: 187,
+            b: 0,
+        },
+        colorDelta: {
+            r: -64,
+            g: -64,
+            b: 0,
+        },
+    },
+    'Put Ask': {
+        color: {
+            r: 255,
+            g: 160,
+            b: 160,
+        },
+        colorDelta: {
+            r: -64,
+            g: -32,
+            b: -32,
+        },
+    },
+    'Put Bid': {
+        color: {
+            r: 0,
+            g: 255,
+            b: 0,
+        },
+        colorDelta: {
+            r: 0,
+            g: -64,
+            b: 0,
+        },
+    },
+    'Put Last Price': {
+        color: {
+            r: 255,
+            g: 255,
+            b: 0,
+        },
+        colorDelta: {
+            r: -64,
+            g: -64,
+            b: 0,
+        },
+    },
+}
+
+function getColorByLabel(label) {
+    let colorSettings = getColorSettingsByLabel(label);
+    let colorObject = colorSettings.color;
+    let colorDelta = colorSettings.colorDelta;
+    let colorArr = [colorObject.r, colorObject.g, colorObject.b, 0.8];
+    let colorString = 'rgba(' + colorArr.join(', ') + ')';
+
+    const MAX_COLOR = 255;
+    for (let colorPart in colorObject) {
+        if (colorObject.hasOwnProperty(colorPart)) {
+            let newColorPart = colorObject[colorPart] + colorDelta[colorPart];
+            if (newColorPart > MAX_COLOR) {
+                newColorPart = newColorPart - MAX_COLOR;
+            }
+            else if (newColorPart < 0) {
+                newColorPart = MAX_COLOR + newColorPart;
+            }
+            colorObject[colorPart] = newColorPart;
+        }
+    }
+
+    return colorString;
+}
+
+function getColorSettingsByLabel(label) {
+    for (let labelSuffix in g_colorSettings) {
+        if (g_colorSettings.hasOwnProperty(labelSuffix) && label.endsWith(labelSuffix)) {
+            return g_colorSettings[labelSuffix];
+        }
+    }
+    return {}
+}
 
 function requestChartData() {
     // Create a new XMLHttpRequest object
@@ -86,45 +197,45 @@ function requestChartData() {
 
 
 const verticalLinePlugin = {
-  id: 'draw_vertical_line',
+    id: 'draw_vertical_line',
 
-  getLinePosition: function(chart, lineX) {
-      scaleX = chart.scales.x;
-      let firstTick = scaleX.ticks[0];
-      let firstTickLabel = firstTick.label;
-      let lastTick = scaleX.ticks[scaleX.ticks.length - 1];
-      let lastTickLabel = lastTick.label;
-      let pixelToLabelValueRatio = scaleX.width / (lastTickLabel - firstTickLabel);
-      let linePosition = scaleX.left + (lineX - firstTickLabel) * pixelToLabelValueRatio;
+    getLinePosition: function(chart, lineX) {
+        scaleX = chart.scales.x;
+        let firstTick = scaleX.ticks[0];
+        let firstTickLabel = firstTick.label;
+        let lastTick = scaleX.ticks[scaleX.ticks.length - 1];
+        let lastTickLabel = lastTick.label;
+        let pixelToLabelValueRatio = scaleX.width / (lastTickLabel - firstTickLabel);
+        let linePosition = scaleX.left + (lineX - firstTickLabel) * pixelToLabelValueRatio;
 
-      const meta = chart.getDatasetMeta(0); // first dataset is used to discover X coordinate of a point
-      const data = meta.data;
-      return linePosition;
-  },
+        const meta = chart.getDatasetMeta(0); // first dataset is used to discover X coordinate of a point
+        const data = meta.data;
+        return linePosition;
+    },
 
-  renderVerticalLine: function(chartInstance, lineX) {
-      const lineLeftOffset = this.getLinePosition(chartInstance, lineX);
-      const scaleY = chartInstance.scales.y;
-      const context = chartInstance.ctx;
+    renderVerticalLine: function(chartInstance, lineX) {
+        const lineLeftOffset = this.getLinePosition(chartInstance, lineX);
+        const scaleY = chartInstance.scales.y;
+        const context = chartInstance.ctx;
 
-      // render vertical line
-      context.beginPath();
-      context.strokeStyle = '#ffff00';
-      context.moveTo(lineLeftOffset, scaleY.top);
-      context.lineTo(lineLeftOffset, scaleY.bottom);
-      context.stroke();
+        // render vertical line
+        context.beginPath();
+        context.strokeStyle = '#ffff00';
+        context.moveTo(lineLeftOffset, scaleY.top);
+        context.lineTo(lineLeftOffset, scaleY.bottom);
+        context.stroke();
 
-      // write label
-      context.fillStyle = "#ffffff";
-      context.textAlign = 'center';
-      context.fillText(lineX, lineLeftOffset, scaleY.bottom + scaleY.paddingBottom);
-  },
+        // write label
+        context.fillStyle = "#ffffff";
+        context.textAlign = 'center';
+        context.fillText(lineX, lineLeftOffset, scaleY.bottom + scaleY.paddingBottom);
+    },
 
-  afterDatasetsDraw: function (chart, args, options, cancelable) {
-      if (options.lineX) {
-          this.renderVerticalLine(chart, options.lineX);
-      }
-  }
+    afterDatasetsDraw: function (chart, args, options, cancelable) {
+        if (options.lineX) {
+            this.renderVerticalLine(chart, options.lineX);
+        }
+    }
 };
 
 function updateChart(chartData) {
@@ -155,6 +266,9 @@ function initDataset(label, data) {
     let datasetByLabel = getSettingsByLabel(label);
     datasetByLabel.label = label;
     datasetByLabel.data = data;
+    let color = getColorByLabel(label);
+    datasetByLabel.backgroundColor = color;
+    datasetByLabel.borderColor = color;
     return datasetByLabel;
 }
 
