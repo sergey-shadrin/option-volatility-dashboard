@@ -12,8 +12,8 @@ from datetime import datetime
 from infrastructure import moex_api
 from view.option_data_request_params import OptionDataRequestParams
 
-STRIKES_COUNT = 11
-STRIKE_STEP = 1000
+_MAX_STRIKES_COUNT = 11
+_DEFAULT_STRIKE_STEP = 1000
 
 
 class OptionApp:
@@ -51,8 +51,7 @@ class OptionApp:
             self._recalculate_volatilities(base_asset)
 
     def _update_watched_instruments_filter(self, base_asset):
-        central_strike = _calculate_central_strike(base_asset.last_price)
-        list_of_strikes = _get_list_of_strikes(central_strike)
+        list_of_strikes = _get_list_of_strikes(base_asset.last_price, _DEFAULT_STRIKE_STEP, _MAX_STRIKES_COUNT)
         options_by_strikes = self._model.option_repository.get_by_strikes(base_asset.ticker, list_of_strikes)
         for option in options_by_strikes:
             option_ticker = option.ticker
@@ -264,18 +263,19 @@ def _print_error_message_and_exit(error_message):
 
 
 # Центральный страйк - наиболее близкий к цене базового актива с учётом заданного шага цены страйков
-def _calculate_central_strike(base_asset_price):
-    return round(base_asset_price / STRIKE_STEP) * STRIKE_STEP
+def _calculate_central_strike(base_asset_price, strike_step):
+    return round(base_asset_price / strike_step) * strike_step
 
 
 # Формируем список страйков с учетом заданного количества страйков, шага цены страйка и центрального страйка
 # TODO: проверять, что все страйки больше нуля
-def _get_list_of_strikes(central_strike):
-    strikes_before_count = STRIKES_COUNT // 2
-    first_strike = central_strike - strikes_before_count * STRIKE_STEP
+def _get_list_of_strikes(base_asset_price, strike_step, strikes_count):
+    central_strike = _calculate_central_strike(base_asset_price, strike_step)
+    strikes_before_count = strikes_count // 2
+    first_strike = central_strike - strikes_before_count * strike_step
     strikes = []
-    for i in range(STRIKES_COUNT):
-        strikes.append(first_strike + i * STRIKE_STEP)
+    for i in range(strikes_count):
+        strikes.append(first_strike + i * strike_step)
 
     return strikes
 
