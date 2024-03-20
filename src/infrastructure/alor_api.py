@@ -1,30 +1,42 @@
 import asyncio
 import json
-import queue
-import uuid
+import hashlib
 
 import websockets
 
 from infrastructure.alor_api_event import AlorApiEvent
 from infrastructure.api_utils import get_object_from_json_endpoint
 
-REFRESH_TOKEN_URL = 'https://oauth.alor.ru/refresh'
-WEBSOCKET_URL = 'wss://api.alor.ru/ws'
-EXCHANGE_MOEX = "MOEX"
+# TODO: возможно, для случая с несколькими одновременно работающими экземплярами приложения одинаковый
+#  id может стать проблемой: разные инстансы будут создавать в API подписки на события с одинаковым GUID.
+#  Если это создаст проблемы, то в таком случае APP ID нужно будет брать из окружения
+#  и делать уникальным для каждого инстанса.
+_APP_ID = 'option_volatility_dashboard'
 
-API_METHOD_QUOTES_SUBSCRIBE = "QuotesSubscribe"
-API_METHOD_INSTRUMENTS_GET_AND_SUBSCRIBE = "InstrumentsGetAndSubscribeV2"
+_REFRESH_TOKEN_URL = 'https://oauth.alor.ru/refresh'
+_WEBSOCKET_URL = 'wss://api.alor.ru/ws'
+_EXCHANGE_MOEX = "MOEX"
+
+_API_METHOD_QUOTES_SUBSCRIBE = "QuotesSubscribe"
+_API_METHOD_INSTRUMENTS_GET_AND_SUBSCRIBE = "InstrumentsGetAndSubscribeV2"
 
 _async_queue = asyncio.Queue()
 
-def _get_guid():
-    return str(uuid.uuid4())
+
+# Generate guid string for given api_method and ticker
+# guid string must be deterministic because otherwise Alor API may block requests.
+# This is because of it's anti-spam system
+def _get_guid(api_method: str, ticker: str):
+    input_string = ';'.join([_APP_ID, api_method, ticker])
+    sha256_hash = hashlib.sha256()
+    sha256_hash.update(input_string.encode())
+    return sha256_hash.hexdigest()
 
 
 def _get_authorization_token(client_token):
     params = {'token': client_token}
 
-    response = get_object_from_json_endpoint(REFRESH_TOKEN_URL, 'POST', params)
+    response = get_object_from_json_endpoint(_REFRESH_TOKEN_URL, 'POST', params)
     authorization_token = None
     if response and 'AccessToken' in response:
         authorization_token = response['AccessToken']
@@ -40,10 +52,10 @@ class AlorApi:
         asyncio.run(self._connect_to_websocket(), debug=True)
 
     def subscribe_to_instrument(self, ticker, callback):
-        self._subscribe_to_event(API_METHOD_INSTRUMENTS_GET_AND_SUBSCRIBE, ticker, callback)
+        self._subscribe_to_event(_API_METHOD_INSTRUMENTS_GET_AND_SUBSCRIBE, ticker, callback)
 
     def subscribe_to_quotes(self, ticker: str, callback: callable):
-        self._subscribe_to_event(API_METHOD_QUOTES_SUBSCRIBE, ticker, callback)
+        self._subscribe_to_event(_API_METHOD_QUOTES_SUBSCRIBE, ticker, callback)
 
     def _handle_alor_data(self, guid, data):
         api_event = self._get_api_event(guid)
@@ -58,7 +70,7 @@ class AlorApi:
         self._api_events[guid] = api_event
 
     async def _connect_to_websocket(self):
-        async with websockets.connect(WEBSOCKET_URL) as websocket:
+        async with websockets.connect(_WEBSOCKET_URL) as websocket:
             await self._handler(websocket)
 
     async def _consumer(self, message):
@@ -88,7 +100,7 @@ class AlorApi:
             task.cancel()
 
     def _subscribe_to_event(self, api_method: str, ticker: str, callback: callable):
-        guid = _get_guid()
+        guid = _get_guid(api_method, ticker)
         event = AlorApiEvent(ticker, callback)
         self._add_api_event(guid, event)
         subscribe_json = self._get_json_to_subscribe(api_method, ticker, guid)
@@ -98,7 +110,7 @@ class AlorApi:
         return json.dumps({
             "opcode": api_method,
             "code": ticker,
-            "exchange": EXCHANGE_MOEX,
+            "exchange": _EXCHANGE_MOEX,
             "guid": guid,
             "token": self._auth_token
         })

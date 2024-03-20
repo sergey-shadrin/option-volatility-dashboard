@@ -12,7 +12,7 @@ from datetime import datetime
 from infrastructure import moex_api
 from view.option_data_request_params import OptionDataRequestParams
 
-_MAX_STRIKES_COUNT = 5
+_MAX_STRIKES_COUNT = 11
 _DEFAULT_STRIKE_STEP = 1000
 
 
@@ -55,7 +55,7 @@ class OptionApp:
         options_by_strikes = self._model.option_repository.get_by_strikes(base_asset.ticker, list_of_strikes)
         for option in options_by_strikes:
             option_ticker = option.ticker
-            if not self._watchedInstrumentsFilter.has_option_ticker(option):
+            if not self._watchedInstrumentsFilter.has_option_ticker(option_ticker):
                 self._alorApi.subscribe_to_quotes(option_ticker, self._handle_option_quotes_event)
                 self._alorApi.subscribe_to_instrument(option_ticker, self._handle_option_instrument_event)
                 self._watchedInstrumentsFilter.add_option_ticker(option_ticker)
