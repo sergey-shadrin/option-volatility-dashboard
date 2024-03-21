@@ -3,6 +3,7 @@ import json
 from flask import Flask, jsonify, request
 import threading
 
+from infrastructure import env_utils
 from view.option_data_request_params import OptionDataRequestParams
 
 
@@ -51,7 +52,8 @@ class FlaskApp:
         return jsonify(result)
 
     def _run_flask_app(self):
-        app.run(host='0.0.0.0', port=5000)
+        port = int(env_utils.get_env_or_exit('PORT'))
+        app.run(host='0.0.0.0', port=port)
 
 
 app = Flask(__name__)
