@@ -1,5 +1,3 @@
-import sys
-import os
 from app.implied_volatility import get_iv_for_option_price
 from infrastructure.alor_api import AlorApi
 from model import option_series_type, option_type
@@ -9,7 +7,7 @@ from model.option_model import OptionModel
 from model.watched_instruments_filter import WatchedInstrumentsFilter
 from view.flask_app import get_flask_app
 from datetime import datetime
-from infrastructure import moex_api
+from infrastructure import moex_api, env_utils
 from view.option_data_request_params import OptionDataRequestParams
 
 _MAX_STRIKES_COUNT = 11
@@ -23,14 +21,14 @@ class OptionApp:
     def __init__(self):
         self._model = OptionModel()
         self._watchedInstrumentsFilter = WatchedInstrumentsFilter()
-        alor_client_token = _get_env_or_exit('ALOR_CLIENT_TOKEN')
+        alor_client_token = env_utils.get_env_or_exit('ALOR_CLIENT_TOKEN')
         self._alorApi = AlorApi(alor_client_token)
 
     def start(self):
         self._prepare_model()
         self._start_flask_app()
         self._subscribe_to_base_asset_events()
-        self._alorApi.run_async_connection()
+        self._alorApi.run_async_connection(env_utils.get_bool('DEBUG'))
 
     def _subscribe_to_base_asset_events(self):
         for base_asset in self._model.base_asset_repository.get_all():
@@ -90,7 +88,6 @@ class OptionApp:
         option.volatility = data['volatility']
 
     def _recalculate_volatilities(self, base_asset):
-        # TODO: оценить трудоёмкость выполнения
         option_repository = self._model.option_repository
         watched_option_tickers = self._watchedInstrumentsFilter.option_tickers
         watched_options_of_base_asset = option_repository.get_by_tickers_for_base_asset(base_asset.ticker,
@@ -247,21 +244,6 @@ class OptionApp:
 
     def get_option_diagram_data(self, request_params: OptionDataRequestParams):
         return self._retrieve_data_for_diagram(request_params)
-
-
-
-def _get_env_or_exit(var_name):
-    value = os.environ.get(var_name)
-
-    if value is None:
-        _print_error_message_and_exit(f'{var_name} environment variable is not set.')
-
-    return value
-
-
-def _print_error_message_and_exit(error_message):
-    sys.stderr.write(error_message + '\n')
-    sys.exit(1)
 
 
 # Центральный страйк - наиболее близкий к цене базового актива с учётом заданного шага цены страйков

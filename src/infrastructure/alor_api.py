@@ -1,7 +1,6 @@
 import asyncio
 import json
 import hashlib
-
 import websockets
 
 from infrastructure.alor_api_event import AlorApiEvent
@@ -19,8 +18,6 @@ _EXCHANGE_MOEX = "MOEX"
 
 _API_METHOD_QUOTES_SUBSCRIBE = "QuotesSubscribe"
 _API_METHOD_INSTRUMENTS_GET_AND_SUBSCRIBE = "InstrumentsGetAndSubscribeV2"
-
-_async_queue = asyncio.Queue()
 
 
 # Generate guid string for given api_method and ticker
@@ -45,11 +42,12 @@ def _get_authorization_token(client_token):
 
 class AlorApi:
     def __init__(self, client_token):
+        self._async_queue = asyncio.Queue()
         self._api_events = {}
         self._auth_token = _get_authorization_token(client_token)
 
-    def run_async_connection(self):
-        asyncio.run(self._connect_to_websocket(), debug=True)
+    def run_async_connection(self, is_debug: bool):
+        asyncio.run(self._connect_to_websocket(), debug=is_debug)
 
     def subscribe_to_instrument(self, ticker, callback):
         self._subscribe_to_event(_API_METHOD_INSTRUMENTS_GET_AND_SUBSCRIBE, ticker, callback)
@@ -57,7 +55,7 @@ class AlorApi:
     def subscribe_to_quotes(self, ticker: str, callback: callable):
         self._subscribe_to_event(_API_METHOD_QUOTES_SUBSCRIBE, ticker, callback)
 
-    def _handle_alor_data(self, guid, data):
+    def _handle_data(self, guid, data):
         api_event = self._get_api_event(guid)
         ticker = api_event.ticker
         callback = api_event.callback
@@ -78,7 +76,7 @@ class AlorApi:
         if 'data' in message_dict and 'guid' in message_dict:
             guid = message_dict['guid']
             data = message_dict['data']
-            self._handle_alor_data(guid, data)
+            self._handle_data(guid, data)
 
     async def _consumer_handler(self, websocket):
         async for message in websocket:
@@ -86,7 +84,7 @@ class AlorApi:
 
     async def _producer_handler(self, websocket):
         while True:
-            message = await _async_queue.get()
+            message = await self._async_queue.get()
             await websocket.send(message)
 
     async def _handler(self, websocket):
@@ -104,7 +102,7 @@ class AlorApi:
         event = AlorApiEvent(ticker, callback)
         self._add_api_event(guid, event)
         subscribe_json = self._get_json_to_subscribe(api_method, ticker, guid)
-        _async_queue.put_nowait(subscribe_json)
+        self._async_queue.put_nowait(subscribe_json)
 
     def _get_json_to_subscribe(self, api_method: str, ticker: str, guid: str):
         return json.dumps({
