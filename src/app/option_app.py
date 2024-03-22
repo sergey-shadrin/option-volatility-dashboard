@@ -20,6 +20,7 @@ class OptionApp:
     _SUPPORTED_BASE_ASSET_TICKERS = ['SiM4']
 
     def __init__(self):
+        print('Debug message to test github Actions')
         self._model = OptionModel()
         self._watchedInstrumentsFilter = WatchedInstrumentsFilter()
         alor_client_token = env_utils.get_env_or_exit('ALOR_CLIENT_TOKEN')
