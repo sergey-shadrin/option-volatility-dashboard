@@ -1,3 +1,4 @@
+from app import trading_session_time
 from app.implied_volatility import get_iv_for_option_price
 from infrastructure.alor_api import AlorApi
 from model import option_series_type, option_type
@@ -68,13 +69,22 @@ class OptionApp:
         option.last_price_timestamp = data['last_price_timestamp']
         option.ask = data['ask']
         option.bid = data['bid']
-        if option.last_price is not None and (
-                prev_last_price_timestamp_of_option is None or prev_last_price_timestamp_of_option != option.last_price_timestamp):
-            # Волатильность по цене последней сделки опциона вычисляется только по факту совершения сделки,
-            # так как это уже свершившиеся событие, и волатильность по нему не нужно пересчитывать постоянно.
-            # При этом возможны сделки по прежней цене, но с другим временем совершения
-            option.last_price_iv = get_iv_for_option_price(base_asset_last_price, option,
-                                                           option.last_price)
+        if option.last_price is not None and option.last_price_timestamp is not None:
+            last_price_timestamp_datetime = datetime.fromtimestamp(option.last_price_timestamp)
+            if trading_session_time.is_datetime_in_current_trading_session(last_price_timestamp_datetime):
+                # Вычисляем новую волатильность по цене последней сделки,
+                # если сделка совершалась в текущую торговую сессию
+                if prev_last_price_timestamp_of_option is None or prev_last_price_timestamp_of_option != option.last_price_timestamp:
+                    # Волатильность по цене последней сделки опциона вычисляется только по факту совершения сделки,
+                    # так как это уже свершившиеся событие, и волатильность по нему не нужно пересчитывать постоянно.
+                    # При этом возможны сделки по прежней цене, но с другим временем совершения
+                    option.last_price_iv = get_iv_for_option_price(base_asset_last_price, option,
+                                                                   option.last_price)
+            elif trading_session_time.is_trading_session_active_now():
+                # Если на данный момент идёт активная торговая сессия,
+                # нужно убирать данные по вычисленной волатильности сделки,
+                # имевшей место в прошлой торговой сессии
+                option.last_price_iv = None
 
         if option.ask:
             option.ask_iv = get_iv_for_option_price(base_asset_last_price, option,
