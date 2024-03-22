@@ -13,23 +13,3 @@ services:
 
 networks:
   option_volatility_dashboard:
-
-#  grafana:
-#    image: grafana/grafana-enterprise
-#    container_name: grafana
-#    restart: unless-stopped
-#    environment:
-#     - GF_SERVER_ROOT_URL=http://grafana.local/
-#     - GF_LOG_LEVEL=debug
-#     - GF_INSTALL_PLUGINS=yesoreyeram-infinity-datasource
-#     - GF_DASHBOARDS_MIN_REFRESH_INTERVAL=1s
-##     - GF_INSTALL_PLUGINS=https://github.com/grafana/grafana-infinity-datasource/releases/download/v2.4.0/yesoreyeram-infinity-datasource-2.4.0.linux_amd64.zip;yesoreyeram-infinity-datasource
-#    ports:
-#     - '3000:3000'
-#    volumes:
-#     - 'grafana_storage:/var/lib/grafana'
-#    networks:
-#      - option_volatility_dashboard
-#volumes:
-#  grafana_storage: {}
-
