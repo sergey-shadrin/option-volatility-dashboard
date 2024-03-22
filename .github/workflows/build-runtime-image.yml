@@ -1,4 +1,4 @@
-name: Build Runtime Docker Image
+name: Build Runtime Docker Image And Redeploy
 
 on:
   push:
@@ -20,5 +20,14 @@ jobs:
           username: shadrinsergey
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: build and push runtime docker image
+      - name: Build and push runtime docker image
         run: ./bin/build-runtime-image.sh
+
+      - name: Install SSH client
+        run: sudo apt-get install openssh-client -y
+
+      - name: Run remote shell script
+        run: |
+          ssh -o StrictHostKeyChecking=no "${REMOTE_USER}@${REMOTE_HOST}" 'sudo /var/www/redeploy.sh'
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
