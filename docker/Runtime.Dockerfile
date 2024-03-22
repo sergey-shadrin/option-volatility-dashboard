@@ -1,4 +1,4 @@
-FROM option_volatility_dashboard_base:0.0.1
+FROM shadrinsergey/option_volatility_dashboard_base:0.0.1
 
 WORKDIR /app
 
