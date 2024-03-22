@@ -3,8 +3,6 @@ name: Build Runtime Docker Image
 on:
   push:
     branches: [ "master" ]
-    paths:
-      - 'src'
 
 jobs:
 
