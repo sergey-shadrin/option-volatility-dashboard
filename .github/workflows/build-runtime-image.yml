@@ -28,5 +28,5 @@ jobs:
         with:
           host: ${{ secrets.REMOTE_HOST }}
           username: ${{ secrets.REMOTE_USER }}
-          key: ${{ secrets.KEY }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: 'sudo /var/www/redeploy.sh'
