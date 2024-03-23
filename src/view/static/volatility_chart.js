@@ -297,8 +297,8 @@ function initChart() {
         animation: false,
         interaction: {
           intersect: false,
-          mode: 'nearest',
-          axis: 'x',
+          mode: 'point',
+          axis: 'xy',
         },
         scales: {
             x: {
@@ -326,10 +326,9 @@ function initChart() {
           },
           tooltip: {
             backgroundColor: 'rgba(107, 107, 107, 0.8)',
-            usePointStyle: true,
-            position: 'nearest',
             xAlign: 'center',
             yAlign: 'bottom',
+            usePointStyle: true
           },
         },
       }
