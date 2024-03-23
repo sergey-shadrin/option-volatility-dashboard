@@ -27,7 +27,7 @@ jobs:
         run: sudo apt-get install openssh-client -y
 
       - name: Init SSH agent
-        run: eval "$(ssh-agent -s)
+        run: eval "$(ssh-agent -s)"
 
       - name: Init SSH private key
         run: ssh-add - <<< "${SSH_PRIVATE_KEY}"
