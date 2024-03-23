@@ -5,6 +5,12 @@ const DEFAULT_SETTINGS_MAP = {
         fill: false,
         cubicInterpolationMode: 'monotone',
         tension: 0.2,
+        elements: {
+            point: {
+                radius: pointRadius / 2,
+                hoverRadius: pointHoverRadius,
+            }
+        }
     },
     'Ask': {
         hidden: true,
