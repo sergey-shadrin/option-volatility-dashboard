@@ -23,20 +23,10 @@ jobs:
       - name: Build and push runtime docker image
         run: ./bin/build-runtime-image.sh
 
-      - name: Install SSH client
-        run: sudo apt-get install openssh-client -y
-
-      - name: Init SSH agent
-        run: eval "$(ssh-agent -s)"
-
-      - name: Init SSH private key
-        run: ssh-add - <<< "${SSH_PRIVATE_KEY}"
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Run remote shell script
-        run: |
-          ssh -o StrictHostKeyChecking=no "${REMOTE_USER}@${REMOTE_HOST}" 'sudo /var/www/redeploy.sh'
-        env:
-          REMOTE_USER: ${{ secrets.REMOTE_USER }}
-          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+      - name: executing remote ssh commands using ssh key
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.KEY }}
+          script: 'sudo /var/www/redeploy.sh'
