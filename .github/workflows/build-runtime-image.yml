@@ -26,10 +26,14 @@ jobs:
       - name: Install SSH client
         run: sudo apt-get install openssh-client -y
 
+      - name: Init SSH agent
+        run: ssh-add - <<< "${SSH_PRIVATE_KEY}"
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+
       - name: Run remote shell script
         run: |
           ssh -o StrictHostKeyChecking=no "${REMOTE_USER}@${REMOTE_HOST}" 'sudo /var/www/redeploy.sh'
         env:
           REMOTE_USER: ${{ secrets.REMOTE_USER }}
           REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
