@@ -23,11 +23,11 @@ class BaseAsset:
         self._last_price = last_price
 
     @property
-    def expiration_dates(self):
+    def expiration_datetimes(self):
         return self._expiration_datetimes
 
-    @expiration_dates.setter
-    def expiration_dates(self, expiration_datetimes):
+    @expiration_datetimes.setter
+    def expiration_datetimes(self, expiration_datetimes):
         self._expiration_datetimes = expiration_datetimes
 
     def add_expiration_datetime(self, expiration_datetime: datetime):

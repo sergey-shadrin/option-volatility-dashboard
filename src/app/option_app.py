@@ -168,10 +168,9 @@ class OptionApp:
         base_asset = self._model.base_asset_repository.get_by_ticker(base_asset_ticker)
         watched_option_tickers = self._watchedInstrumentsFilter.option_tickers
 
-        expiration_datetimes = [datetime.fromisoformat(expiration_date) for expiration_date in request_params.expiration_dates]
         options = self._model.option_repository.get_by_tickers_and_expiration_dates_for_base_asset(base_asset.ticker,
                                                                                                    watched_option_tickers,
-                                                                                                   expiration_datetimes)
+                                                                                                   base_asset.expiration_datetimes)
 
         options_sorted_by_strike = sorted(options, key=_get_option_strike)
 
