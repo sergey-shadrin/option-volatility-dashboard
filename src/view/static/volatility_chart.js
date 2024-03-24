@@ -340,8 +340,6 @@ const verticalLinePlugin = {
         let pixelToLabelValueRatio = scaleX.width / (lastTickLabel - firstTickLabel);
         let linePosition = scaleX.left + (lineX - firstTickLabel) * pixelToLabelValueRatio;
 
-        const meta = chart.getDatasetMeta(0); // first dataset is used to discover X coordinate of a point
-        const data = meta.data;
         return linePosition;
     },
 
@@ -368,6 +366,44 @@ const verticalLinePlugin = {
             this.renderVerticalLine(chart, options.lineX);
         }
     }
+};
+
+const customScaleLimitsPlugin = {
+    id: 'custom_scale_limits',
+    afterUpdate(chart, args, options) {
+        let stockVolatilityMin = null;
+        let stockVolatilityMax = null;
+        chart.data.datasets.forEach((dataset, index) => {
+            isDatasetVisible = chart.getDatasetMeta(index).visible;
+            isStockVolatilityDataset = dataset.label.indexOf('Volatility') != -1;
+            if (isDatasetVisible && isStockVolatilityDataset) {
+                dataset.data.forEach(value => {
+                    stockVolatilityMin = (stockVolatilityMin == null) ? value : Math.min(stockVolatilityMin, value);
+                    stockVolatilityMax = (stockVolatilityMax == null) ? value : Math.max(stockVolatilityMax, value);
+                });
+            }
+        })
+        let wasScaleLimitUpdated = false;
+        if (stockVolatilityMin != null) {
+            let yMin = Math.round(stockVolatilityMin * 0.8);
+            if (chart.scales.y.min != yMin) {
+                chart.options.scales.y.min = yMin;
+                chart.scales.y.min = yMin;
+                wasScaleLimitUpdated = true;
+            }
+        }
+        if (stockVolatilityMax !== null) {
+            yMax = Math.round(stockVolatilityMax * 1.1);
+            if (chart.scales.y.max != yMax) {
+                chart.options.scales.y.max = yMax;
+                chart.scales.y.max = yMax;
+                wasScaleLimitUpdated = true;
+            }
+        }
+        if (wasScaleLimitUpdated) {
+             chart.update();
+        }
+    },
 };
 
 function updateChart(chartData) {
@@ -418,6 +454,7 @@ function initChart() {
     Chart.defaults.color = '#ffffff';
     Chart.register(verticalLinePlugin);
     Chart.register(htmlLegendPlugin);
+    Chart.register(customScaleLimitsPlugin);
 
     const ctx = document.getElementById('volatilityChart');
     return new Chart(ctx, {
@@ -442,7 +479,7 @@ function initChart() {
             y: {
                 grid: {
                     color: '#242424'
-                }
+                },
             }
         },
         plugins: {
