@@ -168,29 +168,52 @@ const htmlLegendPlugin = {
         // Reuse the built-in legendItems generator
         const items = chart.options.plugins.legend.labels.generateLabels(chart);
 
-        let labelPrefix = '';
+        let commonLabelPrefix = '';
         let seriesUl = null;
         items.forEach(item => {
             const labelText = item.text;
             const firstSpaceIndex = labelText.indexOf(' ');
-            let newLabelPrefix = labelText.slice(0, firstSpaceIndex);
+            let labelPrefix = labelText.slice(0, firstSpaceIndex);
             const labelSuffix = labelText.slice(firstSpaceIndex + 1);
             
-            if (newLabelPrefix != labelPrefix) {
-                labelPrefix = newLabelPrefix;
+            if (labelPrefix != commonLabelPrefix) {
+                commonLabelPrefix = labelPrefix;
                 seriesBlock = document.createElement('div');
                 seriesBlock.style.margin = 0;
                 seriesBlock.style.padding = 0;
                 seriesBlock.style.marginLeft = '10px';
 
                 let seriesTitle = document.createElement('h4');
+                seriesTitle.style.cursor = 'pointer';
                 seriesTitle.style.margin = 0;
                 seriesTitle.style.marginBottom = '5px';
                 seriesTitle.style.padding = 0;
-                seriesTitle.style.color = item.fontColor;
-                const text = document.createTextNode(labelPrefix);
+                const text = document.createTextNode(commonLabelPrefix);
                 seriesTitle.appendChild(text);
+
                 seriesBlock.appendChild(seriesTitle);
+
+                let isSeriesVisible = false;
+                items.forEach(labelItem => {
+                    if (labelItem.text.indexOf(labelPrefix) == 0) {
+                        if (!labelItem.hidden) {
+                            isSeriesVisible = true;
+                        }
+                    }
+                });
+                seriesTitle.style.textDecoration = !isSeriesVisible ? 'line-through' : '';
+                seriesTitle.style.color = !isSeriesVisible ? 'gray' : item.fontColor;
+
+                seriesTitle.onclick = () => {
+                    //switch visibility to opposite value
+                    items.forEach(labelItem => {
+                        if (labelItem.text.indexOf(labelPrefix) == 0) {
+                            chart.setDatasetVisibility(labelItem.datasetIndex, !isSeriesVisible);
+                        }
+                    });
+
+                    chart.update();
+                };
 
                 seriesUl = document.createElement('ul');
                 seriesUl.style.margin = 0;
@@ -209,13 +232,7 @@ const htmlLegendPlugin = {
             li.style.marginBottom = '2px';
 
             li.onclick = () => {
-                const {type} = chart.config;
-                if (type === 'pie' || type === 'doughnut') {
-                    // Pie and doughnut charts only have a single dataset and visibility is per item
-                    chart.toggleDataVisibility(item.index);
-                } else {
-                    chart.setDatasetVisibility(item.datasetIndex, !chart.isDatasetVisible(item.datasetIndex));
-                }
+                chart.setDatasetVisibility(item.datasetIndex, !chart.isDatasetVisible(item.datasetIndex));
                 chart.update();
             };
 
@@ -232,10 +249,10 @@ const htmlLegendPlugin = {
 
             // Text
             const textContainer = document.createElement('p');
-            textContainer.style.color = item.fontColor;
             textContainer.style.margin = 0;
             textContainer.style.padding = 0;
             textContainer.style.textDecoration = item.hidden ? 'line-through' : '';
+            textContainer.style.color = item.hidden ? 'gray' : item.fontColor;
 
             const text = document.createTextNode(labelSuffix);
             textContainer.appendChild(text);
