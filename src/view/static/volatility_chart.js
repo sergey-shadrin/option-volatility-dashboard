@@ -138,6 +138,115 @@ var g_colorSettings = {
     },
 }
 
+const getOrCreateLegendBlock = (chart, id) => {
+    const legendContainer = document.getElementById(id);
+    let legendBlock = legendContainer.querySelector('div');
+  
+    if (!legendBlock) {
+        legendBlock = document.createElement('div');
+        legendBlock.style.display = 'flex';
+        legendBlock.style.flexDirection = 'row';
+        legendBlock.style.margin = 0;
+        legendBlock.style.padding = 0;
+    
+        legendContainer.appendChild(legendBlock);
+    }
+  
+    return legendBlock;
+};
+
+const htmlLegendPlugin = {
+    id: 'htmlLegend',
+    afterUpdate(chart, args, options) {
+        const legendBlock = getOrCreateLegendBlock(chart, options.containerID);
+
+        // Remove old legend items
+        while (legendBlock.firstChild) {
+            legendBlock.firstChild.remove();
+        }
+
+        // Reuse the built-in legendItems generator
+        const items = chart.options.plugins.legend.labels.generateLabels(chart);
+
+        let labelPrefix = '';
+        let seriesUl = null;
+        items.forEach(item => {
+            const labelText = item.text;
+            const firstSpaceIndex = labelText.indexOf(' ');
+            let newLabelPrefix = labelText.slice(0, firstSpaceIndex);
+            const labelSuffix = labelText.slice(firstSpaceIndex + 1);
+            
+            if (newLabelPrefix != labelPrefix) {
+                labelPrefix = newLabelPrefix;
+                seriesBlock = document.createElement('div');
+                seriesBlock.style.margin = 0;
+                seriesBlock.style.padding = 0;
+                seriesBlock.style.marginLeft = '10px';
+
+                let seriesTitle = document.createElement('h4');
+                seriesTitle.style.margin = 0;
+                seriesTitle.style.marginBottom = '5px';
+                seriesTitle.style.padding = 0;
+                seriesTitle.style.color = item.fontColor;
+                const text = document.createTextNode(labelPrefix);
+                seriesTitle.appendChild(text);
+                seriesBlock.appendChild(seriesTitle);
+
+                seriesUl = document.createElement('ul');
+                seriesUl.style.margin = 0;
+                seriesUl.style.padding = 0;
+                seriesBlock.appendChild(seriesUl);
+
+                legendBlock.appendChild(seriesBlock);
+            }
+
+            const li = document.createElement('li');
+            li.style.alignItems = 'center';
+            li.style.cursor = 'pointer';
+            li.style.display = 'flex';
+            li.style.flexDirection = 'row';
+            li.style.margin = 0;
+            li.style.marginBottom = '2px';
+
+            li.onclick = () => {
+                const {type} = chart.config;
+                if (type === 'pie' || type === 'doughnut') {
+                    // Pie and doughnut charts only have a single dataset and visibility is per item
+                    chart.toggleDataVisibility(item.index);
+                } else {
+                    chart.setDatasetVisibility(item.datasetIndex, !chart.isDatasetVisible(item.datasetIndex));
+                }
+                chart.update();
+            };
+
+            // Color box
+            const boxSpan = document.createElement('span');
+            boxSpan.style.background = item.fillStyle;
+            boxSpan.style.borderColor = item.strokeStyle;
+            boxSpan.style.borderWidth = item.lineWidth + 'px';
+            boxSpan.style.display = 'inline-block';
+            boxSpan.style.flexShrink = 0;
+            boxSpan.style.height = '20px';
+            boxSpan.style.marginRight = '10px';
+            boxSpan.style.width = '20px';
+
+            // Text
+            const textContainer = document.createElement('p');
+            textContainer.style.color = item.fontColor;
+            textContainer.style.margin = 0;
+            textContainer.style.padding = 0;
+            textContainer.style.textDecoration = item.hidden ? 'line-through' : '';
+
+            const text = document.createTextNode(labelSuffix);
+            textContainer.appendChild(text);
+
+            li.appendChild(boxSpan);
+            li.appendChild(textContainer);
+            seriesUl.appendChild(li);
+        });
+    }
+};
+
 function getColorByLabel(label) {
     let colorSettings = getColorSettingsByLabel(label);
     let colorObject = colorSettings.color;
@@ -291,6 +400,7 @@ function getSettingsByLabel(label) {
 function initChart() {
     Chart.defaults.color = '#ffffff';
     Chart.register(verticalLinePlugin);
+    Chart.register(htmlLegendPlugin);
 
     const ctx = document.getElementById('volatilityChart');
     return new Chart(ctx, {
@@ -319,16 +429,13 @@ function initChart() {
             }
         },
         plugins: {
-          'draw_vertical_line': {
+          'draw_vertical_line': {},
+          htmlLegend: {
+            // ID of the container to put the legend in
+            containerID: 'legend-container',
           },
           legend: {
-            labels: {
-              usePointStyle: true,
-            },
-          },
-          title: {
-            display: true,
-            text: 'SiM4',
+            display: false,
           },
           tooltip: {
             backgroundColor: 'rgba(107, 107, 107, 0.8)',
