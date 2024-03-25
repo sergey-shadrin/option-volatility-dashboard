@@ -69,6 +69,7 @@ class OptionApp:
         option.last_price_timestamp = data['last_price_timestamp']
         option.ask = data['ask']
         option.bid = data['bid']
+
         if option.last_price is not None and option.last_price_timestamp is not None:
             last_price_timestamp_datetime = datetime.fromtimestamp(option.last_price_timestamp)
             if trading_session_time.is_datetime_in_current_trading_session(last_price_timestamp_datetime):
@@ -128,8 +129,9 @@ class OptionApp:
             self._populate_options_from_board(base_asset, series_type, expiration_date)
 
     def _populate_options_from_board(self, base_asset: BaseAsset, series_type: str, expiration_date: str):
-        expiration_datetime = self._get_option_expiration_datetime(base_asset.base_asset_code, series_type,
-                                                                   expiration_date)
+        expiration_datetime = trading_session_time.get_option_expiration_datetime(base_asset.base_asset_code,
+                                                                                  series_type,
+                                                                                  expiration_date)
         base_asset.add_expiration_datetime(expiration_datetime)
 
         option_board_data = moex_api.get_option_board(base_asset.ticker, expiration_date)
@@ -139,13 +141,6 @@ class OptionApp:
                 strike = option_data['STRIKE']
                 option = Option(option_ticker, base_asset.ticker, expiration_datetime, strike, opt_type)
                 self._model.option_repository.insert_option(option)
-
-    def _get_option_expiration_datetime(self, base_asset_code: str, series_type: str, expiration_date: str):
-        expiration_datetime = expiration_date + 'T18:50:00'
-        currency_base_asset_codes = ('Si', 'Eu', 'Cn')
-        if base_asset_code in currency_base_asset_codes and series_type == option_series_type.QUARTER:
-            expiration_datetime = expiration_date + 'T14:00:00'
-        return datetime.fromisoformat(expiration_datetime)
 
     def _init_base_asset_from_moex_api(self, base_asset_ticker):
         base_asset = BaseAsset(base_asset_ticker)
