@@ -54,14 +54,14 @@ const DEFAULT_SETTINGS_MAP = {
 var g_colorSettings = {
     'Volatility': {
         color: {
-            r: 209,
-            g: 209,
-            b: 209,
+            r: 225,
+            g: 225,
+            b: 225,
         },
         colorDelta: {
-            r: -16,
-            g: -16,
-            b: -16,
+            r: -32,
+            g: -32,
+            b: -32,
         },
     },
     'Call Ask': {
@@ -71,7 +71,7 @@ var g_colorSettings = {
             b: 0,
         },
         colorDelta: {
-            r: -16,
+            r: -32,
             g: 0,
             b: 0,
         },
@@ -84,7 +84,7 @@ var g_colorSettings = {
         },
         colorDelta: {
             r: 0,
-            g: -16,
+            g: -25,
             b: 0,
         },
     },
@@ -120,7 +120,7 @@ var g_colorSettings = {
         },
         colorDelta: {
             r: 0,
-            g: -32,
+            g: -45,
             b: 0,
         },
     },
