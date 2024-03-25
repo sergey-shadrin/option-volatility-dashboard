@@ -4,14 +4,14 @@
     <meta charSet="utf-8"/>
   </head>
   <body style="background: black;">
-    <h2 style="color: white;">SiM4</h2>
+    <h2 style="color: white;">{{ base_asset_ticker }}</h2>
     <div id="legend-container"></div>
     <div>
       <canvas id="volatilityChart"></canvas>
     </div>
 
+    <input type="hidden" id="requestDataUrl" value="{{ url_for('get_chart_json', base_asset_ticker=base_asset_ticker) }}" />
     <script src="/static/chart.js"></script>
-
     <script src="/static/volatility_chart.js"></script>
   </body>
 </html>

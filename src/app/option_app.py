@@ -1,7 +1,7 @@
-from app import trading_session_time
+from app import trading_session_time, supported_base_asset
 from app.implied_volatility import get_iv_for_option_price
 from infrastructure.alor_api import AlorApi
-from model import option_series_type, option_type
+from model import option_type
 from model.base_asset import BaseAsset
 from model.option import Option
 from model.option_model import OptionModel
@@ -9,15 +9,9 @@ from model.watched_instruments_filter import WatchedInstrumentsFilter
 from view.flask_app import get_flask_app
 from datetime import datetime
 from infrastructure import moex_api, env_utils
-from view.option_data_request_params import OptionDataRequestParams
-
-_MAX_STRIKES_COUNT = 11
-_DEFAULT_STRIKE_STEP = 1000
 
 
 class OptionApp:
-
-    _SUPPORTED_BASE_ASSET_TICKERS = ['SiM4']
 
     def __init__(self):
         self._model = OptionModel()
@@ -50,14 +44,15 @@ class OptionApp:
             self._recalculate_volatilities(base_asset)
 
     def _update_watched_instruments_filter(self, base_asset):
-        list_of_strikes = _get_list_of_strikes(base_asset.last_price, _DEFAULT_STRIKE_STEP, _MAX_STRIKES_COUNT)
+        strike_step = supported_base_asset.MAP[base_asset.ticker]['strike_step']
+        max_strikes_count = supported_base_asset.MAP[base_asset.ticker]['max_strikes_count']
+        list_of_strikes = _get_list_of_strikes(base_asset.last_price, strike_step, max_strikes_count)
         options_by_strikes = self._model.option_repository.get_by_strikes(base_asset.ticker, list_of_strikes)
         for option in options_by_strikes:
-            option_ticker = option.ticker
-            if not self._watchedInstrumentsFilter.has_option_ticker(option_ticker):
-                self._alorApi.subscribe_to_quotes(option_ticker, self._handle_option_quotes_event)
-                self._alorApi.subscribe_to_instrument(option_ticker, self._handle_option_instrument_event)
-                self._watchedInstrumentsFilter.add_option_ticker(option_ticker)
+            if not self._watchedInstrumentsFilter.has_option_ticker(option.ticker):
+                self._alorApi.subscribe_to_quotes(option.ticker, self._handle_option_quotes_event)
+                self._alorApi.subscribe_to_instrument(option.ticker, self._handle_option_instrument_event)
+                self._watchedInstrumentsFilter.add_option_ticker(option.ticker)
 
     def _handle_option_quotes_event(self, ticker, data):
         option = self._model.option_repository.get_by_ticker(ticker)
@@ -115,7 +110,7 @@ class OptionApp:
         flask_app.start_app_in_thread()
 
     def _prepare_model(self):
-        for base_asset_ticker in self._SUPPORTED_BASE_ASSET_TICKERS:
+        for base_asset_ticker in supported_base_asset.MAP.keys():
             self._populate_model_for_base_asset(base_asset_ticker)
 
     def _populate_model_for_base_asset(self, base_asset_ticker: str):
@@ -152,14 +147,19 @@ class OptionApp:
                 base_asset.base_asset_code = row['value']
         return base_asset
 
-    def _retrieve_data_for_diagram(self, request_params: OptionDataRequestParams):
+    def get_diagram_data(self, base_asset_ticker: str):
         # TODO: концепт с динамическим обновлением списка "наблюдаемых" инструментов пока не реализован
         #  из-за трудностей передачи данных между потоками. Метод вызывается из обработчика Flask в другом потоке.
         #  если вызывать отсюда методы asyncio.Queue() - происходит падение с ошибкой
         #  "RuntimeError: Non-thread-safe operation invoked on an event loop other than the current one"
+        #  Так что на данный момент извлекаем только те данные, что уже есть
 
-        # Извлекаем те данные, что уже есть
-        base_asset_ticker = request_params.base_asset_ticker
+        if base_asset_ticker not in supported_base_asset.MAP:
+            return {
+                'error': f'Could not find base asset by ticker: {base_asset_ticker}',
+                'supported_base_assets': supported_base_asset.MAP,
+            }
+
         base_asset = self._model.base_asset_repository.get_by_ticker(base_asset_ticker)
         watched_option_tickers = self._watchedInstrumentsFilter.option_tickers
 
@@ -237,9 +237,6 @@ class OptionApp:
         watched_options = self._model.option_repository.get_by_tickers(watched_option_tickers)
 
         return [vars(option) for option in watched_options]
-
-    def get_option_diagram_data(self, request_params: OptionDataRequestParams):
-        return self._retrieve_data_for_diagram(request_params)
 
 
 # Центральный страйк - наиболее близкий к цене базового актива с учётом заданного шага цены страйков

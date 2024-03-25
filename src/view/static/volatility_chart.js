@@ -302,25 +302,25 @@ function requestChartData() {
     var xhr = new XMLHttpRequest();
 
     // Configure the request
-    xhr.open('GET', '/chart.json', true);
+    xhr.open('GET', g_requestDataUrl, true);
 
     // Set up the onload function to handle the response
     xhr.onload = function() {
-      // Check if the request was successful
-      if (xhr.status >= 200 && xhr.status < 300) {
-        // Parse the JSON response
-        var jsonResponse = JSON.parse(xhr.responseText);
+        // Check if the request was successful
+        if (xhr.status >= 200 && xhr.status < 300) {
+            // Parse the JSON response
+            var jsonResponse = JSON.parse(xhr.responseText);
 
-        updateChart(jsonResponse);
-      } else {
-        // Handle errors
-        console.error('Request failed with status code ' + xhr.status);
-      }
+            updateChart(jsonResponse);
+        } else {
+            // Handle errors
+            console.error('Request failed with status code ' + xhr.status);
+        }
     };
 
     // Set up the onerror function to handle errors
     xhr.onerror = function() {
-      console.error('Request failed');
+        console.error('Request failed');
     };
 
     // Send the request
@@ -502,6 +502,7 @@ function initChart() {
     });
 }
 
+var g_requestDataUrl = document.getElementById('requestDataUrl').value;
 var g_chart = initChart();
 requestChartData();
 setInterval(requestChartData, 3000);

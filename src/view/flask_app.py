@@ -1,11 +1,11 @@
-import json
-
+import flask
 from flask import Flask, jsonify, request
 import threading
 
+from app import supported_base_asset
 from infrastructure import env_utils
-from view.option_data_request_params import OptionDataRequestParams
 
+_BASE_ASSET_TICKER_QUERY_PARAM = 'base_asset_ticker'
 
 class FlaskApp:
     def __init__(self):
@@ -26,26 +26,22 @@ class FlaskApp:
     def dump_watched_instruments(self):
         return jsonify(self._option_app.dump_watched_instruments())
 
-    def get_diagram_data(self):
-        request_params = OptionDataRequestParams()
-        request_params.base_asset_ticker = 'SiM4'
-        result = self._option_app.get_option_diagram_data(request_params)
+    def get_index_html(self, error_message=None):
+        tickers = supported_base_asset.MAP.keys()
+        return flask.render_template('index.html', error_message=error_message, tickers=tickers)
 
-        return jsonify(result)
-
-    def get_option_diagram_data(self):
-        if request.method == 'POST':
-            request_params_data = json.loads(request.form.get('request_params_json'))
-            request_params = OptionDataRequestParams()
-            request_params.base_asset_ticker = request_params_data['base_asset_ticker']
-            request_params.expiration_dates = request_params_data['expiration_dates']
-            request_params.strikes_count = request_params_data['strikes_count']
-            request_params.strikes_step = request_params_data['strikes_step']
-
-            result = self._option_app.get_option_diagram_data(request_params)
+    def get_chart_html(self):
+        base_asset_ticker = request.args.get(_BASE_ASSET_TICKER_QUERY_PARAM)
+        if base_asset_ticker not in supported_base_asset.MAP:
+            error_message = f'Тикер ({base_asset_ticker}) не поддерживается. Ниже ссылки на диаграммы по поддерживаемым тикерам.'
+            result = self.get_index_html(error_message=error_message)
         else:
-            result = {'error': 'Only POST requests are allowed.'}
+            result = flask.render_template('chart.html', base_asset_ticker=base_asset_ticker)
+        return result
 
+    def get_chart_json(self):
+        base_asset_ticker = request.args.get(_BASE_ASSET_TICKER_QUERY_PARAM)
+        result = self._option_app.get_diagram_data(base_asset_ticker)
         return jsonify(result)
 
     def _run_flask_app(self):
@@ -63,6 +59,21 @@ def get_flask_app():
     return _flask_app
 
 
+@app.route('/', methods=['GET'])
+def get_index_html():
+    return _flask_app.get_index_html()
+
+
+@app.route('/chart.json', methods=['GET'])
+def get_chart_json():
+    return _flask_app.get_chart_json()
+
+
+@app.route('/chart.html', methods=['GET'])
+def get_chart_html():
+    return _flask_app.get_chart_html()
+
+
 @app.route('/dump_model', methods=['GET'])
 def dump_model():
     return _flask_app.dump_model()
@@ -73,11 +84,3 @@ def dump_watched_instruments():
     return _flask_app.dump_watched_instruments()
 
 
-@app.route('/chart.json', methods=['GET'])
-def get_diagram_data():
-    return _flask_app.get_diagram_data()
-
-
-@app.route('/option_diagram_data.json', methods=['POST'])
-def option_diagram_data():
-    return _flask_app.get_option_diagram_data()
