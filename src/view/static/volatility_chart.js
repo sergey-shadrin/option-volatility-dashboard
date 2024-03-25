@@ -54,14 +54,14 @@ const DEFAULT_SETTINGS_MAP = {
 var g_colorSettings = {
     'Volatility': {
         color: {
-            r: 255,
-            g: 0,
-            b: 0,
+            r: 209,
+            g: 209,
+            b: 209,
         },
         colorDelta: {
-            r: -64,
-            g: 0,
-            b: 0,
+            r: -16,
+            g: -16,
+            b: -16,
         },
     },
     'Call Ask': {
@@ -71,7 +71,7 @@ var g_colorSettings = {
             b: 0,
         },
         colorDelta: {
-            r: -64,
+            r: -16,
             g: 0,
             b: 0,
         },
@@ -84,7 +84,7 @@ var g_colorSettings = {
         },
         colorDelta: {
             r: 0,
-            g: -32,
+            g: -16,
             b: 0,
         },
     },
@@ -95,8 +95,8 @@ var g_colorSettings = {
             b: 0,
         },
         colorDelta: {
-            r: -64,
-            g: -64,
+            r: -32,
+            g: -32,
             b: 0,
         },
     },
@@ -107,9 +107,9 @@ var g_colorSettings = {
             b: 160,
         },
         colorDelta: {
-            r: -64,
-            g: -32,
-            b: -32,
+            r: -32,
+            g: -16,
+            b: -16,
         },
     },
     'Put Bid': {
@@ -120,7 +120,7 @@ var g_colorSettings = {
         },
         colorDelta: {
             r: 0,
-            g: -64,
+            g: -32,
             b: 0,
         },
     },
@@ -131,8 +131,8 @@ var g_colorSettings = {
             b: 0,
         },
         colorDelta: {
-            r: -64,
-            g: -64,
+            r: -32,
+            g: -32,
             b: 0,
         },
     },
@@ -268,7 +268,7 @@ function getColorByLabel(label) {
     let colorSettings = getColorSettingsByLabel(label);
     let colorObject = colorSettings.color;
     let colorDelta = colorSettings.colorDelta;
-    let colorArr = [colorObject.r, colorObject.g, colorObject.b, 0.8];
+    let colorArr = [colorObject.r, colorObject.g, colorObject.b, 1];
     let colorString = 'rgba(' + colorArr.join(', ') + ')';
 
     const MAX_COLOR = 255;
