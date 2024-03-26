@@ -63,6 +63,16 @@ var g_colorSettings = {
             g: -32,
             b: -32,
         },
+        min: {
+            r: 90,
+            g: 90,
+            b: 90,
+        },
+        max: {
+            r: 225,
+            g: 225,
+            b: 225,
+        }
     },
     'Call Ask': {
         color: {
@@ -72,6 +82,16 @@ var g_colorSettings = {
         },
         colorDelta: {
             r: -32,
+            g: 0,
+            b: 0,
+        },
+        min: {
+            r: 120,
+            g: 0,
+            b: 0,
+        },
+        max: {
+            r: 255,
             g: 0,
             b: 0,
         },
@@ -87,6 +107,16 @@ var g_colorSettings = {
             g: -25,
             b: 0,
         },
+        min: {
+            r: 0,
+            g: 60,
+            b: 0,
+        },
+        max: {
+            r: 0,
+            g: 160,
+            b: 0,
+        },
     },
     'Call Last Price': {
         color: {
@@ -97,6 +127,16 @@ var g_colorSettings = {
         colorDelta: {
             r: -32,
             g: -32,
+            b: 0,
+        },
+        min: {
+            r: 120,
+            g: 50,
+            b: 0,
+        },
+        max: {
+            r: 255,
+            g: 187,
             b: 0,
         },
     },
@@ -111,6 +151,16 @@ var g_colorSettings = {
             g: -16,
             b: -16,
         },
+        min: {
+            r: 120,
+            g: 90,
+            b: 90,
+        },
+        max: {
+            r: 255,
+            g: 160,
+            b: 160,
+        },
     },
     'Put Bid': {
         color: {
@@ -123,6 +173,16 @@ var g_colorSettings = {
             g: -45,
             b: 0,
         },
+        min: {
+            r: 0,
+            g: 70,
+            b: 0,
+        },
+        max: {
+            r: 0,
+            g: 255,
+            b: 0,
+        },
     },
     'Put Last Price': {
         color: {
@@ -133,6 +193,16 @@ var g_colorSettings = {
         colorDelta: {
             r: -32,
             g: -32,
+            b: 0,
+        },
+        min: {
+            r: 120,
+            g: 120,
+            b: 0,
+        },
+        max: {
+            r: 255,
+            g: 255,
             b: 0,
         },
     },
@@ -268,18 +338,22 @@ function getColorByLabel(label) {
     let colorSettings = getColorSettingsByLabel(label);
     let colorObject = colorSettings.color;
     let colorDelta = colorSettings.colorDelta;
-    let colorArr = [colorObject.r, colorObject.g, colorObject.b, 1];
+    let maxColor = colorSettings.max;
+    let minColor = colorSettings.min;
+    const alpha = 1;
+    let colorArr = [colorObject.r, colorObject.g, colorObject.b, alpha];
     let colorString = 'rgba(' + colorArr.join(', ') + ')';
 
-    const MAX_COLOR = 255;
     for (let colorPart in colorObject) {
         if (colorObject.hasOwnProperty(colorPart)) {
             let newColorPart = colorObject[colorPart] + colorDelta[colorPart];
-            if (newColorPart > MAX_COLOR) {
-                newColorPart = newColorPart - MAX_COLOR;
+            let maxColorPart = maxColor[colorPart];
+            let minColorPart = minColor[colorPart];
+            if (newColorPart > maxColorPart) {
+                newColorPart = minColorPart + newColorPart - maxColorPart;
             }
-            else if (newColorPart < 0) {
-                newColorPart = MAX_COLOR + newColorPart;
+            else if (newColorPart < minColorPart) {
+                newColorPart = newColorPart - minColorPart + maxColorPart;
             }
             colorObject[colorPart] = newColorPart;
         }
