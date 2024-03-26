@@ -2,7 +2,7 @@ from datetime import datetime
 
 
 class Option:
-    def __init__(self, ticker: str, base_asset_ticker: str, expiration_datetime: datetime, strike: int, option_type: str):
+    def __init__(self, ticker: str, base_asset_ticker: str, expiration_datetime: datetime, strike: float, option_type: str):
         self._ticker = ticker
         self._base_asset_ticker = base_asset_ticker
         self._expiration_datetime = expiration_datetime
@@ -35,7 +35,7 @@ class Option:
         return self._expiration_datetime
 
     @property
-    def strike(self):
+    def strike(self) -> float:
         return self._strike
 
     @property

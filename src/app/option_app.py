@@ -1,4 +1,4 @@
-from app import trading_session_time, supported_base_asset
+from app import trading_session_time, supported_base_asset, central_strike
 from app.implied_volatility import get_iv_for_option_price
 from infrastructure.alor_api import AlorApi
 from model import option_type
@@ -46,7 +46,7 @@ class OptionApp:
     def _update_watched_instruments_filter(self, base_asset):
         strike_step = supported_base_asset.MAP[base_asset.ticker]['strike_step']
         max_strikes_count = supported_base_asset.MAP[base_asset.ticker]['max_strikes_count']
-        list_of_strikes = _get_list_of_strikes(base_asset.last_price, strike_step, max_strikes_count)
+        list_of_strikes = central_strike.get_list_of_strikes(base_asset.last_price, strike_step, max_strikes_count)
         options_by_strikes = self._model.option_repository.get_by_strikes(base_asset.ticker, list_of_strikes)
         for option in options_by_strikes:
             if not self._watchedInstrumentsFilter.has_option_ticker(option.ticker):
@@ -237,24 +237,6 @@ class OptionApp:
         watched_options = self._model.option_repository.get_by_tickers(watched_option_tickers)
 
         return [vars(option) for option in watched_options]
-
-
-# Центральный страйк - наиболее близкий к цене базового актива с учётом заданного шага цены страйков
-def _calculate_central_strike(base_asset_price, strike_step):
-    return round(base_asset_price / strike_step) * strike_step
-
-
-# Формируем список страйков с учетом заданного количества страйков, шага цены страйка и центрального страйка
-# TODO: проверять, что все страйки больше нуля
-def _get_list_of_strikes(base_asset_price, strike_step, strikes_count):
-    central_strike = _calculate_central_strike(base_asset_price, strike_step)
-    strikes_before_count = strikes_count // 2
-    first_strike = central_strike - strikes_before_count * strike_step
-    strikes = []
-    for i in range(strikes_count):
-        strikes.append(first_strike + i * strike_step)
-
-    return strikes
 
 
 def _get_option_strike(option: Option):
