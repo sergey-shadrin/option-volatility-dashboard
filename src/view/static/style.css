@@ -1,0 +1,24 @@
+*
+{
+    margin: 0;
+    padding: 0;
+}
+
+body
+{
+    background: black;
+    color: white;
+    font-size: 14px;
+    margin: 6px;
+}
+
+h2
+{
+    margin-bottom: 4px;
+    padding-left: 9px;
+}
+
+.legend_container
+{
+    margin-bottom: 3px;
+}

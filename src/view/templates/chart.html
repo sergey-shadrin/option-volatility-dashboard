@@ -2,10 +2,11 @@
 <html>
   <head>
     <meta charSet="utf-8"/>
+    <link type="text/css" rel="stylesheet" href="/static/style.css" >
   </head>
   <body style="background: black;">
-    <h2 style="color: white;">{{ base_asset_ticker }}</h2>
-    <div id="legend-container"></div>
+    <h2>{{ base_asset_ticker }}</h2>
+    <div class="legend_container" id="legend-container"></div>
     <div>
       <canvas id="volatilityChart"></canvas>
     </div>

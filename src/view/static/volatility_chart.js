@@ -313,9 +313,9 @@ const htmlLegendPlugin = {
             boxSpan.style.borderWidth = item.lineWidth + 'px';
             boxSpan.style.display = 'inline-block';
             boxSpan.style.flexShrink = 0;
-            boxSpan.style.height = '20px';
-            boxSpan.style.marginRight = '10px';
-            boxSpan.style.width = '20px';
+            boxSpan.style.height = '14px';
+            boxSpan.style.marginRight = '6px';
+            boxSpan.style.width = '14px';
 
             // Text
             const textContainer = document.createElement('p');
@@ -579,4 +579,4 @@ function initChart() {
 var g_requestDataUrl = document.getElementById('requestDataUrl').value;
 var g_chart = initChart();
 requestChartData();
-setInterval(requestChartData, 3000);
+//setInterval(requestChartData, 3000);
