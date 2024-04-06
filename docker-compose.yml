@@ -1,8 +1,7 @@
-version: "3"
 services:
-  option_volatility_api:
-    image: shadrinsergey/option_volatility_dashboard:0.0.1
-    container_name: option_volatility_api
+  option_volatility_dashboard:
+    image: ${RUNTIME_IMAGE_NAME}
+    container_name: option_volatility_dashboard
     restart: unless-stopped
     env_file:
       - .env

@@ -5,7 +5,9 @@ set -o nounset
 
 PROJECT_DIR=$(dirname "$(dirname "$(readlink -f "$0")")")
 
+source "${PROJECT_DIR}/build.env"
+
 docker build \
-  --tag shadrinsergey/option_volatility_dashboard_base:0.0.1 \
+  --tag ${BASE_IMAGE_NAME} \
   --file "${PROJECT_DIR}/docker/Base.Dockerfile" \
   "${PROJECT_DIR}"

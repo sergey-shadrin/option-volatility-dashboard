@@ -4,11 +4,12 @@ set -o errexit
 set -o nounset
 
 PROJECT_DIR=$(dirname "$(dirname "$(readlink -f "$0")")")
-RUNTIME_IMAGE_TAG="shadrinsergey/option_volatility_dashboard:0.0.1"
+source "${PROJECT_DIR}/build.env"
 
 docker build \
-  --tag "${RUNTIME_IMAGE_TAG}" \
+  --build-arg "BASE_IMAGE_NAME=${BASE_IMAGE_NAME}" \
+  --tag "${RUNTIME_IMAGE_NAME}" \
   --file "${PROJECT_DIR}/docker/Runtime.Dockerfile" \
   "${PROJECT_DIR}"
 
-docker push "${RUNTIME_IMAGE_TAG}"
+docker push "${RUNTIME_IMAGE_NAME}"

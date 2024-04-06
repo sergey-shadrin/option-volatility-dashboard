@@ -1,4 +1,6 @@
-FROM shadrinsergey/option_volatility_dashboard_base:0.0.1
+ARG BASE_IMAGE_NAME=""
+
+FROM ${BASE_IMAGE_NAME}
 
 WORKDIR /app
 
