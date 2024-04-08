@@ -6,5 +6,7 @@ WORKDIR /app
 
 COPY src .
 
+USER www-data
+
 ENTRYPOINT ["python"]
 CMD ["main.py"]
