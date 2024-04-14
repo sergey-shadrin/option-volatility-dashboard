@@ -11,6 +11,10 @@ MAP = {
         'strike_step': 0.05,
         'max_strikes_count': 11,
     },
+    'NGK4': {
+        'strike_step': 0.05,
+        'max_strikes_count': 11,
+    },
     'CRM4': {
         'strike_step': 0.25,
         'max_strikes_count': 11,
