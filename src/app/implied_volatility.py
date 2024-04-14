@@ -18,7 +18,10 @@ def get_iv_for_option_price(asset_price: int, option: Option, opt_price: int):
     time_to_maturity = option.get_time_to_maturity()
 
     tolerance = 10 ** -8
-    iv = _implied_vol(opt_price, asset_price, strike_price, _RISK_FREE_INTEREST_RATE, time_to_maturity, tolerance, option.type)
+    try:
+        iv = _implied_vol(opt_price, asset_price, strike_price, _RISK_FREE_INTEREST_RATE, time_to_maturity, tolerance, option.type)
+    except ZeroDivisionError:
+        iv = None
 
     if not iv or math.isinf(iv) or math.isnan(iv):
         return None
