@@ -10,6 +10,7 @@ body
     color: white;
     font-size: 14px;
     margin: 6px;
+    font-family: sans-serif;
 }
 
 h2
@@ -21,4 +22,29 @@ h2
 .legend_container
 {
     margin-bottom: 3px;
+}
+
+.error_message
+{
+    color: red;
+}
+
+.asset_list
+{
+    padding-left: 25px;
+}
+
+.asset_list li
+{
+    margin-bottom: 2px;
+}
+
+.asset_list a
+{
+    color: rgb(110,168,254);
+}
+
+.asset_list a:hover
+{
+    color: #8bb9fe;
 }

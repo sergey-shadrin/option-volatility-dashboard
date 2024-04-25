@@ -2,13 +2,14 @@
 <html>
   <head>
     <meta charSet="utf-8"/>
+    <link type="text/css" rel="stylesheet" href="/static/style.css" >
   </head>
-  <body style="background: black;">
-    <h2 style="color: white;">Option Volatility Dashboard</h2>
+  <body>
+    <h2>Option Volatility Dashboard</h2>
     {% if error_message %}
-      <p style="color: red;">{{ error_message }}</p>
+      <p class="error_message">{{ error_message }}</p>
     {% endif %}
-    <ul>
+    <ul class="asset_list">
       {% for ticker in tickers %}
         <li>
           <a href="{{ url_for('get_chart_html', base_asset_ticker=ticker) }}" title="{{ ticker }}">{{ ticker }}</a>
