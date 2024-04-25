@@ -13,7 +13,7 @@ body
     font-family: sans-serif;
 }
 
-h2
+h2, p
 {
     margin-bottom: 4px;
     padding-left: 9px;
