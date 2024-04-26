@@ -1,7 +1,7 @@
 services:
-  option_volatility_dashboard:
+  backend:
     image: ${RUNTIME_IMAGE_NAME}
-    container_name: option_volatility_dashboard
+    container_name: backend
     restart: unless-stopped
     env_file:
       - .env

@@ -1,6 +1,5 @@
 from datetime import datetime
 
-from model import option_type
 from model.option import Option
 
 

@@ -9,5 +9,5 @@ source "${PROJECT_DIR}/build.env"
 
 docker build \
   --tag ${BUILDER_IMAGE_NAME} \
-  --file "${PROJECT_DIR}/docker/Builder.Dockerfile" \
-  "${PROJECT_DIR}"
+  --file "${PROJECT_DIR}/app/backend/docker/Builder.Dockerfile" \
+  "${PROJECT_DIR}/app/backend"

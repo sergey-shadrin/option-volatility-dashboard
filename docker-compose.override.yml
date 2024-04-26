@@ -2,8 +2,8 @@
 
 version: "3"
 services:
-  option_volatility_dashboard:
+  backend:
     stdin_open: true
     tty: true
     volumes:
-      - "$PWD/src:/app"
+      - "$PWD/app/backend/src:/app"
