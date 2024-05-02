@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 set -o errexit
-set -o nounset
 
 PROJECT_DIR=$(dirname "$(dirname "$(readlink -f "$0")")")
 APP_NAME=$1

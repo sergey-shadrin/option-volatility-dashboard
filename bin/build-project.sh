@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 set -o errexit
-set -o nounset
 
 PROJECT_DIR=$(dirname "$(dirname "$(readlink -f "$0")")")
 APP_NAME=$1
@@ -14,4 +13,4 @@ fi
 APP_DIR="${PROJECT_DIR}/app/${APP_NAME}"
 APP_CACHE_DIR="${PROJECT_DIR}/cache/${APP_NAME}"
 
-"${PROJECT_DIR}/bin/run-builder-container.sh" bash -c "${APP_DIR}/bin/run-in-builder-container.sh ${APP_CACHE_DIR}"
+"${PROJECT_DIR}/bin/run-builder-container.sh" "${APP_NAME}" bash -c "${APP_DIR}/bin/run-in-builder-container.sh ${APP_CACHE_DIR}"

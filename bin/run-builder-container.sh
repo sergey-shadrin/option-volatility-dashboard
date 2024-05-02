@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 set -o errexit
-set -o nounset
 
 PROJECT_DIR=$(dirname "$(dirname "$(readlink -f "$0")")")
 APP_NAME=$1
@@ -12,6 +11,7 @@ then
   exit 1
 fi
 APP_DIR="${PROJECT_DIR}/app/${APP_NAME}"
+shift # this is required to strip APP_NAME from command line arguments
 source "${APP_DIR}/build.env"
 
 USER_ID=$(id -u)

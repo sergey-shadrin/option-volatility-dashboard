@@ -6,13 +6,13 @@ set -o nounset
 PROJECT_DIR=$(dirname "$(dirname "$(readlink -f "$0")")")
 
 # Build 'builder' Docker image which has all dependencies to build current project
-"${PROJECT_DIR}/bin/build-builder-image.sh"
+"${PROJECT_DIR}/bin/build-builder-image.sh" backend
 
 # Build project in project root directory
-"${PROJECT_DIR}/bin/build-project.sh"
+"${PROJECT_DIR}/bin/build-project.sh" backend
 
 # Build 'base' Docker image which has all dependencies except app
-"${PROJECT_DIR}/bin/build-base-image.sh"
+"${PROJECT_DIR}/bin/build-base-image.sh" backend
 
 # Build 'runtime' Docker image upon 'base' Docker image by copying app files in it
-"${PROJECT_DIR}/bin/build-runtime-image.sh"
+"${PROJECT_DIR}/bin/build-runtime-image.sh" backend
