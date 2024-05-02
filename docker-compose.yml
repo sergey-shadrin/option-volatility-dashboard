@@ -1,6 +1,6 @@
 services:
   backend:
-    image: ${RUNTIME_IMAGE_NAME}
+    image: ${BACKEND_RUNTIME_IMAGE_NAME}
     container_name: backend
     restart: unless-stopped
     env_file:

@@ -4,12 +4,24 @@ set -o errexit
 set -o nounset
 
 PROJECT_DIR=$(dirname "$(dirname "$(readlink -f "$0")")")
-source "${PROJECT_DIR}/build.env"
+APP_NAME=$1
+if [ -z "$APP_NAME" ];
+then
+  >&2 echo "Usage: build-runtime-image.sh <app_name>. Possible <app_name> values are:"
+  >&2 ls "${PROJECT_DIR}/app"
+  exit 1
+fi
+APP_DIR="${PROJECT_DIR}/app/${APP_NAME}"
+
+source "${APP_DIR}/build.env"
+
+IMAGE_TAG=${RUNTIME_IMAGE_NAME}
+DOCKERFILE_PATH="${APP_DIR}/docker/Runtime.Dockerfile"
 
 docker build \
   --build-arg "BASE_IMAGE_NAME=${BASE_IMAGE_NAME}" \
-  --tag "${RUNTIME_IMAGE_NAME}" \
-  --file "${PROJECT_DIR}/app/backend/docker/Runtime.Dockerfile" \
-  "${PROJECT_DIR}/app/backend"
+  --tag "${IMAGE_TAG}" \
+  --file "${DOCKERFILE_PATH}" \
+  "${APP_DIR}"
 
-docker push "${RUNTIME_IMAGE_NAME}"
+docker push "${IMAGE_TAG}"

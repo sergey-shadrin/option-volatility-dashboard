@@ -3,8 +3,17 @@
 set -o errexit
 set -o nounset
 
-WORK_DIR=$(dirname "$(dirname "$(readlink -f "$0")")")
-BUILDER_IMAGE_NAME=option_volatility_dashboard_builder:0.0.1
+PROJECT_DIR=$(dirname "$(dirname "$(readlink -f "$0")")")
+APP_NAME=$1
+if [ -z "$APP_NAME" ];
+then
+  >&2 echo "Usage: run-builder-container.sh <app_name>. Possible <app_name> values are:"
+  >&2 ls "${PROJECT_DIR}/app"
+  exit 1
+fi
+APP_DIR="${PROJECT_DIR}/app/${APP_NAME}"
+source "${APP_DIR}/build.env"
+
 USER_ID=$(id -u)
 
 docker run \
@@ -14,7 +23,7 @@ docker run \
   --user "$USER_ID:www-data" \
   --volume "/etc/passwd:/etc/passwd:ro" \
   --volume "/etc/group:/etc/group:ro" \
-  --volume "$PWD:$WORK_DIR" \
-  --workdir "$WORK_DIR" \
+  --volume "$PWD:$PROJECT_DIR" \
+  --workdir "$PROJECT_DIR" \
   "$BUILDER_IMAGE_NAME" \
   "$@"

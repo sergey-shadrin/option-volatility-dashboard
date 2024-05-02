@@ -3,8 +3,13 @@
 set -o errexit
 set -o nounset
 
-PROJECT_ROOT_DIR=$(dirname "$(dirname "$(readlink -f "$0")")")
-source "${PROJECT_ROOT_DIR}/build.env"
-export RUNTIME_IMAGE_NAME
+PROJECT_DIR=$(dirname "$(dirname "$(readlink -f "$0")")")
+# TODO: надо со всех компонентов собирать необходимые переменные окружения
+APP_NAME="backend"
+APP_DIR="${PROJECT_DIR}/app/${APP_NAME}"
 
-cd "${PROJECT_ROOT_DIR}" && docker-compose up -d && docker-compose logs -f
+source "${APP_DIR}/build.env"
+BACKEND_RUNTIME_IMAGE_NAME=${RUNTIME_IMAGE_NAME}
+export BACKEND_RUNTIME_IMAGE_NAME
+
+cd "${PROJECT_DIR}" && docker-compose up -d && docker-compose logs -f
