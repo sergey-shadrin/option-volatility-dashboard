@@ -14,11 +14,4 @@ APP_DIR="${PROJECT_DIR}/app/${APP_NAME}"
 
 source "${APP_DIR}/build.env"
 
-IMAGE_TAG=${RUNTIME_IMAGE_NAME}
-DOCKERFILE_PATH="${APP_DIR}/docker/Runtime.Dockerfile"
-
-docker build \
-  --build-arg "BASE_IMAGE_NAME=${BASE_IMAGE_NAME}" \
-  --tag "${IMAGE_TAG}" \
-  --file "${DOCKERFILE_PATH}" \
-  "${APP_DIR}"
+docker push "${RUNTIME_IMAGE_NAME}"

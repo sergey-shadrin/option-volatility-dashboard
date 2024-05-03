@@ -1,4 +1,4 @@
-name: Build Runtime Docker Image And Redeploy
+name: Build Runtime Docker Images And Redeploy
 
 on:
   push:
@@ -20,8 +20,17 @@ jobs:
           username: shadrinsergey
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push runtime docker image
-        run: ./bin/build-runtime-image.sh
+      - name: Build runtime docker image backend
+        run: ./bin/build-runtime-image.sh backend
+
+      - name: Build runtime docker image frontend
+        run: ./bin/build-runtime-image.sh frontend
+
+      - name: Push runtime docker image backend
+        run: ./bin/push-runtime-image.sh backend
+
+      - name: Push runtime docker image frontend
+        run: ./bin/push-runtime-image.sh frontend
 
       - name: executing remote ssh commands using ssh key
         uses: appleboy/ssh-action@v1.0.3

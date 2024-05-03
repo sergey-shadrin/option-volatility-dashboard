@@ -15,10 +15,6 @@ MAP = {
         'strike_step': 0.25,
         'max_strikes_count': 11,
     },
-    'BRK4': {
-        'strike_step': 1,
-        'max_strikes_count': 11,
-    },
     'GZM4': {
         'strike_step': 250,
         'max_strikes_count': 11,

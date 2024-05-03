@@ -3,6 +3,7 @@ from flask import Flask, jsonify, request
 import threading
 
 from app import supported_base_asset
+from werkzeug.middleware.proxy_fix import ProxyFix
 from infrastructure import env_utils
 
 _BASE_ASSET_TICKER_QUERY_PARAM = 'base_asset_ticker'
@@ -51,6 +52,9 @@ class FlaskApp:
 
 app = Flask(__name__)
 app.json_provider_class.compact = False
+app.wsgi_app = ProxyFix(
+    app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
+)
 
 _flask_app = FlaskApp()
 
@@ -82,5 +86,3 @@ def dump_model():
 @app.route('/dump_watched_instruments', methods=['GET'])
 def dump_watched_instruments():
     return _flask_app.dump_watched_instruments()
-
-
