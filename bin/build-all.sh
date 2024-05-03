@@ -5,14 +5,22 @@ set -o nounset
 
 PROJECT_DIR=$(dirname "$(dirname "$(readlink -f "$0")")")
 
-# Build 'builder' Docker image which has all dependencies to build current project
-"${PROJECT_DIR}/bin/build-builder-image.sh" backend
+build_app() {
+  # Build 'builder' Docker image which has all dependencies to build current project
+  "${PROJECT_DIR}/bin/build-builder-image.sh" "$@"
 
-# Build project in project root directory
-"${PROJECT_DIR}/bin/build-project.sh" backend
+  # Build project in project root directory
+  "${PROJECT_DIR}/bin/build-project.sh" "$@"
 
-# Build 'base' Docker image which has all dependencies except app
-"${PROJECT_DIR}/bin/build-base-image.sh" backend
+  # Build 'base' Docker image which has all dependencies except app
+  "${PROJECT_DIR}/bin/build-base-image.sh" "$@"
 
-# Build 'runtime' Docker image upon 'base' Docker image by copying app files in it
-"${PROJECT_DIR}/bin/build-runtime-image.sh" backend
+  # Build 'runtime' Docker image upon 'base' Docker image by copying app files in it
+  "${PROJECT_DIR}/bin/build-runtime-image.sh" "$@"
+}
+
+APPS=$("${PROJECT_DIR}/bin/list-apps.sh")
+for APP in $APPS
+do
+  build_app "${APP}"
+done
