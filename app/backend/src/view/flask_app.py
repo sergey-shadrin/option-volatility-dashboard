@@ -46,7 +46,7 @@ class FlaskApp:
         return jsonify(result)
 
     def _run_flask_app(self):
-        port = int(env_utils.get_env_or_exit('PORT'))
+        port = int(env_utils.get_env_or_exit('BACKEND_PORT'))
         app.run(host='0.0.0.0', port=port)
 
 

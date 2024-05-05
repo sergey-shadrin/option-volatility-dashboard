@@ -1,10 +1,22 @@
 services:
+  ingress:
+    image: ${INGRESS_IMAGE_NAME}
+    container_name: ingress
+    restart: unless-stopped
+    volumes:
+     - ./docker-compose-ingress-nginx/templates:/etc/nginx/templates
+    ports:
+     - '80:80'
+     - "443:443"
+    environment:
+      - NGINX_HOST=${HOST}
+    networks:
+      - option_volatility_dashboard
+
   frontend:
     image: ${FRONTEND_RUNTIME_IMAGE_NAME}
     container_name: frontend
     restart: unless-stopped
-    ports:
-     - '80:80'
     networks:
       - option_volatility_dashboard
 
