@@ -5,6 +5,7 @@ services:
     restart: unless-stopped
     volumes:
      - ./docker-compose-ingress-nginx/templates:/etc/nginx/templates
+     - ./docker-compose-ingress-nginx/ssl:/etc/nginx/ssl
     ports:
      - '80:80'
      - "443:443"

@@ -3,9 +3,15 @@ upstream frontend {
 }
 
 server {
-    listen       80;
-    #listen       443 ssl;
-    server_name  ${NGINX_HOST};
+    listen        80;
+    listen        443 ssl;
+    server_name   ${NGINX_HOST};
+
+    ssl_certificate     /etc/nginx/ssl/tls.crt;
+    ssl_certificate_key /etc/nginx/ssl/tls.key;
+
+
+    server_tokens off;
 
     location / {
         proxy_pass http://frontend;
