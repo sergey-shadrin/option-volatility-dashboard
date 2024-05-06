@@ -12,7 +12,7 @@
     <ul class="asset_list">
       {% for ticker in tickers %}
         <li>
-          <a href="{{ url_for('get_chart_html', base_asset_ticker=ticker) }}" title="{{ ticker }}">{{ ticker }}</a>
+          <a href="{{ url_for('get_chart_html', base_asset_ticker=ticker) }}" target="_blank" title="{{ ticker }}">{{ ticker }}</a>
         </li>
       {% endfor %}
     </ul>
