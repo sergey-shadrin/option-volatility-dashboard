@@ -1,6 +1,7 @@
 .idea/
 /cache/
 /.env
+/docker-compose-ingress-nginx/ssl
 
 # Python bytecode
 __pycache__
