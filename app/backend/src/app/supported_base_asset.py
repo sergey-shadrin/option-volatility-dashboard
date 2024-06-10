@@ -3,12 +3,16 @@ MAP = {
         'strike_step': 2500,
         'max_strikes_count': 7,
     },
+    'RIU4': {
+        'strike_step': 2500,
+        'max_strikes_count': 7,
+    },
     'SiM4': {
         'strike_step': 1000,
         'max_strikes_count': 11,
     },
-    'NGK4': {
-        'strike_step': 0.05,
+    'SiU4': {
+        'strike_step': 1000,
         'max_strikes_count': 11,
     },
     'CRM4': {
