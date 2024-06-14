@@ -15,7 +15,7 @@ MAP = {
         'strike_step': 1000,
         'max_strikes_count': 11,
     },
-    'CRM4': {
+    'CRU4': {
         'strike_step': 0.25,
         'max_strikes_count': 11,
     },
