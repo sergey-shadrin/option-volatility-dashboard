@@ -1,21 +1,21 @@
 MAP = {
-    'RIU4': {
+    'RIZ4': {
         'strike_step': 2500,
         'max_strikes_count': 7,
     },
-    'SiU4': {
+    'SiZ4': {
         'strike_step': 1000,
         'max_strikes_count': 11,
     },
-    'CRU4': {
+    'CRZ4': {
         'strike_step': 0.25,
         'max_strikes_count': 11,
     },
-    'GZU4': {
+    'GZZ4': {
         'strike_step': 250,
         'max_strikes_count': 11,
     },
-    'SRU4': {
+    'SRZ4': {
         'strike_step': 250,
         'max_strikes_count': 11,
     },
