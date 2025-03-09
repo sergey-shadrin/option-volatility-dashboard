@@ -1,5 +1,6 @@
 .idea/
 /cache/
+/data/
 /.env
 /docker-compose-ingress-nginx/ssl
 

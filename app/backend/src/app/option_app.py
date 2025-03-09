@@ -1,3 +1,5 @@
+from prometheus_client import Gauge
+
 from app import trading_session_time, supported_base_asset, central_strike
 from app.implied_volatility import get_iv_for_option_price
 from infrastructure.alor_api import AlorApi
@@ -10,6 +12,7 @@ from view.flask_app import get_flask_app
 from datetime import datetime
 from infrastructure import moex_api, env_utils
 
+BASE_ASSET_LAST_PRICE_GAUGE = Gauge('base_asset_last_price', 'Last price of base asset', ['ticker'])
 
 class OptionApp:
 
@@ -36,6 +39,7 @@ class OptionApp:
             prev_last_price = base_asset.last_price
 
         base_asset.last_price = data['last_price']
+        self._set_base_asset_metrics(base_asset)
 
         if prev_last_price is None:
             self._update_watched_instruments_filter(base_asset)
@@ -116,12 +120,20 @@ class OptionApp:
     def _populate_model_for_base_asset(self, base_asset_ticker: str):
         base_asset = self._init_base_asset_from_moex_api(base_asset_ticker)
         self._model.base_asset_repository.insert_base_asset(base_asset)
+        self._set_base_asset_metrics(base_asset)
 
         option_expirations = moex_api.get_option_expirations(base_asset_ticker)
         for option_expiration_data in option_expirations:
             series_type = option_expiration_data['series_type']
             expiration_date = option_expiration_data['expiration_date']
             self._populate_options_from_board(base_asset, series_type, expiration_date)
+
+    def _set_base_asset_metrics(self, base_asset):
+        last_price = base_asset.last_price
+        if not last_price:
+            return
+
+        BASE_ASSET_LAST_PRICE_GAUGE.labels(ticker=base_asset.ticker).set(last_price)
 
     def _populate_options_from_board(self, base_asset: BaseAsset, series_type: str, expiration_date: str):
         expiration_datetime = trading_session_time.get_option_expiration_datetime(base_asset.base_asset_code,

@@ -35,5 +35,40 @@ services:
     networks:
       - option_volatility_dashboard
 
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:v1.112.0
+    container_name: victoriametrics
+    restart: unless-stopped
+    volumes:
+     - ./data/victoria-metrics-data:/victoria-metrics-data
+     - ./scrape.yaml:/scrape.yaml
+    ports:
+     - "8428:8428"
+    command:
+      - "-storageDataPath=/victoria-metrics-data"
+      - "-httpListenAddr=:8428"
+      - "-retentionPeriod=2d"
+      - "-promscrape.config=/scrape.yaml"
+    networks:
+      - option_volatility_dashboard
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data/grafana-data:/var/lib/grafana
+      - ./grafana-provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=victoriametrics-metrics-datasource
+    depends_on:
+      - victoriametrics
+    networks:
+      - option_volatility_dashboard
+
 networks:
   option_volatility_dashboard:
