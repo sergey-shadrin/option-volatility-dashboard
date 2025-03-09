@@ -13,6 +13,7 @@ from datetime import datetime
 from infrastructure import moex_api, env_utils
 
 BASE_ASSET_LAST_PRICE_GAUGE = Gauge('base_asset_last_price', 'Last price of base asset', ['ticker'])
+OPTION_VOLATILITY_GAUGE = Gauge('option_volatility', 'Option volatility', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
 
 class OptionApp:
 
@@ -92,10 +93,12 @@ class OptionApp:
         if option.bid:
             option.bid_iv = get_iv_for_option_price(base_asset_last_price, option,
                                                     option.bid)
+        self._set_option_metrics(option)
 
     def _handle_option_instrument_event(self, ticker, data):
         option = self._model.option_repository.get_by_ticker(ticker)
         option.volatility = data['volatility']
+        self._set_option_metrics(option)
 
     def _recalculate_volatilities(self, base_asset):
         option_repository = self._model.option_repository
@@ -129,11 +132,15 @@ class OptionApp:
             self._populate_options_from_board(base_asset, series_type, expiration_date)
 
     def _set_base_asset_metrics(self, base_asset):
-        last_price = base_asset.last_price
-        if not last_price:
-            return
+        if base_asset.last_price:
+            BASE_ASSET_LAST_PRICE_GAUGE.labels(ticker=base_asset.ticker).set(base_asset.last_price)
 
-        BASE_ASSET_LAST_PRICE_GAUGE.labels(ticker=base_asset.ticker).set(last_price)
+    def _set_option_metrics(self, option):
+        # OPTION_VOLATILITY_GAUGE = Gauge('option_volatility', 'Option volatility',
+        #                                 ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
+
+        if option.volatility:
+            OPTION_VOLATILITY_GAUGE.labels(ticker=option.ticker, strike=option.strike, type=option.type, base_asset_ticker=option.base_asset_ticker, expiration_datetime=option.expiration_datetime.isoformat()).set(option.volatility)
 
     def _populate_options_from_board(self, base_asset: BaseAsset, series_type: str, expiration_date: str):
         expiration_datetime = trading_session_time.get_option_expiration_datetime(base_asset.base_asset_code,
