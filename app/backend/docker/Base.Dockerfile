@@ -1,6 +1,6 @@
 ARG PYTHON_VERSION=3.12.2
 
-FROM python:${PYTHON_VERSION}-slim-bullseye
+FROM --platform=linux/amd64 python:${PYTHON_VERSION}-slim-bullseye as build
 
 WORKDIR /app
 COPY requirements.txt .
