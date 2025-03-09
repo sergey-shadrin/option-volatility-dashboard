@@ -4,7 +4,9 @@ import threading
 
 from app import supported_base_asset
 from werkzeug.middleware.proxy_fix import ProxyFix
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from infrastructure import env_utils
+from prometheus_client import make_wsgi_app
 
 _BASE_ASSET_TICKER_QUERY_PARAM = 'base_asset_ticker'
 
@@ -55,7 +57,10 @@ app.json_provider_class.compact = False
 app.wsgi_app = ProxyFix(
     app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
 )
-
+# Add prometheus wsgi middleware to route /metrics requests
+app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
+    '/metrics': make_wsgi_app()
+})
 _flask_app = FlaskApp()
 
 
