@@ -20,7 +20,7 @@ docker run \
   --rm \
   --interactive \
   --tty \
-  --user "$USER_ID:www-data" \
+  --user "$USER_ID" \
   --volume "/etc/passwd:/etc/passwd:ro" \
   --volume "/etc/group:/etc/group:ro" \
   --volume "$PWD:$PROJECT_DIR" \

@@ -1,6 +1,5 @@
 # This file is suitable for local development
 
-version: "3"
 services:
   backend:
     stdin_open: true
