@@ -12,8 +12,14 @@ from view.flask_app import get_flask_app
 from datetime import datetime
 from infrastructure import moex_api, env_utils
 
-BASE_ASSET_LAST_PRICE_GAUGE = Gauge('base_asset_last_price', 'Last price of base asset', ['ticker'])
+BASE_ASSET_LAST_PRICE_GAUGE = Gauge('base_asset_last_price', 'Last price of base asset', ['ticker', 'short_name', 'base_asset_code'])
 OPTION_VOLATILITY_GAUGE = Gauge('option_volatility', 'Option volatility', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
+OPTION_ASK_GAUGE = Gauge('option_ask', 'Option ask', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
+OPTION_ASK_IV_GAUGE = Gauge('option_ask_iv', 'Option ask implied volatility', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
+OPTION_BID_GAUGE = Gauge('option_bid', 'Option bid', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
+OPTION_BID_IV_GAUGE = Gauge('option_bid_iv', 'Option bid implied volatility', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
+OPTION_LAST_PRICE_GAUGE = Gauge('option_last_price', 'Option last price', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
+OPTION_LAST_PRICE_IV_GAUGE = Gauge('option_last_price_iv', 'Option last price implied volatility', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
 
 class OptionApp:
 
@@ -110,6 +116,7 @@ class OptionApp:
                                                     option.ask)
             option.bid_iv = get_iv_for_option_price(base_asset.last_price, option,
                                                     option.bid)
+            self._set_option_metrics(option)
 
     def _start_flask_app(self):
         flask_app = get_flask_app()
@@ -133,14 +140,45 @@ class OptionApp:
 
     def _set_base_asset_metrics(self, base_asset):
         if base_asset.last_price:
-            BASE_ASSET_LAST_PRICE_GAUGE.labels(ticker=base_asset.ticker).set(base_asset.last_price)
+            BASE_ASSET_LAST_PRICE_GAUGE.labels(ticker=base_asset.ticker, short_name=base_asset.short_name, base_asset_code=base_asset.base_asset_code).set(base_asset.last_price)
+
 
     def _set_option_metrics(self, option):
-        # OPTION_VOLATILITY_GAUGE = Gauge('option_volatility', 'Option volatility',
-        #                                 ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
-
         if option.volatility:
-            OPTION_VOLATILITY_GAUGE.labels(ticker=option.ticker, strike=option.strike, type=option.type, base_asset_ticker=option.base_asset_ticker, expiration_datetime=option.expiration_datetime.isoformat()).set(option.volatility)
+            OPTION_VOLATILITY_GAUGE.labels(ticker=option.ticker, strike=option.strike, type=option.type,
+                                           base_asset_ticker=option.base_asset_ticker,
+                                           expiration_datetime=option.expiration_datetime.isoformat()).set(option.volatility)
+
+        if option.ask:
+            OPTION_ASK_GAUGE.labels(ticker=option.ticker, strike=option.strike, type=option.type,
+                                    base_asset_ticker=option.base_asset_ticker,
+                                    expiration_datetime=option.expiration_datetime.isoformat()).set(option.ask)
+
+        if option.ask_iv:
+            OPTION_ASK_IV_GAUGE.labels(ticker=option.ticker, strike=option.strike, type=option.type,
+                                    base_asset_ticker=option.base_asset_ticker,
+                                    expiration_datetime=option.expiration_datetime.isoformat()).set(option.ask_iv)
+
+        if option.bid:
+            OPTION_BID_GAUGE.labels(ticker=option.ticker, strike=option.strike, type=option.type,
+                                    base_asset_ticker=option.base_asset_ticker,
+                                    expiration_datetime=option.expiration_datetime.isoformat()).set(option.bid)
+
+        if option.bid_iv:
+            OPTION_BID_IV_GAUGE.labels(ticker=option.ticker, strike=option.strike, type=option.type,
+                                    base_asset_ticker=option.base_asset_ticker,
+                                    expiration_datetime=option.expiration_datetime.isoformat()).set(option.bid_iv)
+
+        if option.last_price:
+            OPTION_LAST_PRICE_GAUGE.labels(ticker=option.ticker, strike=option.strike, type=option.type,
+                                    base_asset_ticker=option.base_asset_ticker,
+                                    expiration_datetime=option.expiration_datetime.isoformat()).set(option.last_price)
+
+        if option.last_price_iv:
+            OPTION_LAST_PRICE_IV_GAUGE.labels(ticker=option.ticker, strike=option.strike, type=option.type,
+                                    base_asset_ticker=option.base_asset_ticker,
+                                    expiration_datetime=option.expiration_datetime.isoformat()).set(option.last_price_iv)
+
 
     def _populate_options_from_board(self, base_asset: BaseAsset, series_type: str, expiration_date: str):
         expiration_datetime = trading_session_time.get_option_expiration_datetime(base_asset.base_asset_code,
