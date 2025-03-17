@@ -3,7 +3,7 @@
 _PRECISION_DIGITS_COUNT = 5
 
 
-# Формируем список страйков с учетом заданного количества страйков, шага цены страйка и центрального страйка
+# Формируем центральный страйк и список страйков с учетом заданного количества страйков, шага цены страйка и центрального страйка
 def get_list_of_strikes(base_asset_price, strike_step, strikes_count):
     central_strike = _calculate_central_strike(base_asset_price, strike_step)
     strikes_before_count = strikes_count // 2
@@ -12,7 +12,7 @@ def get_list_of_strikes(base_asset_price, strike_step, strikes_count):
     for i in range(strikes_count):
         strikes.append(_round_strike(first_strike + i * strike_step))
 
-    return strikes
+    return central_strike, strikes
 
 
 # Центральный страйк - наиболее близкий к цене базового актива с учётом заданного шага цены страйков

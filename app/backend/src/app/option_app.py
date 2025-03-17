@@ -1,6 +1,6 @@
 from prometheus_client import Gauge
 
-from app import trading_session_time, supported_base_asset, central_strike
+from app import trading_session_time, supported_base_asset, central_strike_calculator
 from app.implied_volatility import get_iv_for_option_price
 from infrastructure.alor_api import AlorApi
 from model import option_type
@@ -20,6 +20,7 @@ OPTION_BID_GAUGE = Gauge('option_bid', 'Option bid', ['ticker', 'strike', 'type'
 OPTION_BID_IV_GAUGE = Gauge('option_bid_iv', 'Option bid implied volatility', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
 OPTION_LAST_PRICE_GAUGE = Gauge('option_last_price', 'Option last price', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
 OPTION_LAST_PRICE_IV_GAUGE = Gauge('option_last_price_iv', 'Option last price implied volatility', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
+CENTRAL_STRIKE_GAUGE = Gauge('central_strike', 'Central strike', ['base_asset_ticker'])
 
 class OptionApp:
 
@@ -57,7 +58,8 @@ class OptionApp:
     def _update_watched_instruments_filter(self, base_asset):
         strike_step = supported_base_asset.MAP[base_asset.ticker]['strike_step']
         max_strikes_count = supported_base_asset.MAP[base_asset.ticker]['max_strikes_count']
-        list_of_strikes = central_strike.get_list_of_strikes(base_asset.last_price, strike_step, max_strikes_count)
+        central_strike, list_of_strikes = central_strike_calculator.get_list_of_strikes(base_asset.last_price, strike_step, max_strikes_count)
+        CENTRAL_STRIKE_GAUGE.labels(base_asset_ticker=base_asset.ticker).set(central_strike)
         options_by_strikes = self._model.option_repository.get_by_strikes(base_asset.ticker, list_of_strikes)
         for option in options_by_strikes:
             if not self._watchedInstrumentsFilter.has_option_ticker(option.ticker):
