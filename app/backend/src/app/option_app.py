@@ -12,7 +12,7 @@ from view.flask_app import get_flask_app
 from datetime import datetime
 from infrastructure import moex_api, env_utils
 
-BASE_ASSET_LAST_PRICE_GAUGE = Gauge('base_asset_last_price', 'Last price of base asset', ['ticker', 'short_name', 'base_asset_code'])
+BASE_ASSET_LAST_PRICE_GAUGE = Gauge('base_asset_last_price', 'Last price of base asset', ['ticker', 'short_name', 'base_asset_code', 'strike'])
 OPTION_VOLATILITY_GAUGE = Gauge('option_volatility', 'Option volatility', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
 OPTION_ASK_GAUGE = Gauge('option_ask', 'Option ask', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
 OPTION_ASK_IV_GAUGE = Gauge('option_ask_iv', 'Option ask implied volatility', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
@@ -47,19 +47,18 @@ class OptionApp:
             prev_last_price = base_asset.last_price
 
         base_asset.last_price = data['last_price']
-        self._set_base_asset_metrics(base_asset)
 
         if prev_last_price is None:
             self._update_watched_instruments_filter(base_asset)
         elif prev_last_price != base_asset.last_price:
             self._update_watched_instruments_filter(base_asset)
             self._recalculate_volatilities(base_asset)
+        self._set_base_asset_metrics(base_asset)
 
     def _update_watched_instruments_filter(self, base_asset):
         strike_step = supported_base_asset.MAP[base_asset.ticker]['strike_step']
         max_strikes_count = supported_base_asset.MAP[base_asset.ticker]['max_strikes_count']
-        central_strike, list_of_strikes = central_strike_calculator.get_list_of_strikes(base_asset.last_price, strike_step, max_strikes_count)
-        CENTRAL_STRIKE_GAUGE.labels(base_asset_ticker=base_asset.ticker).set(central_strike)
+        base_asset.strike, list_of_strikes = central_strike_calculator.get_list_of_strikes(base_asset.last_price, strike_step, max_strikes_count)
         options_by_strikes = self._model.option_repository.get_by_strikes(base_asset.ticker, list_of_strikes)
         for option in options_by_strikes:
             if not self._watchedInstrumentsFilter.has_option_ticker(option.ticker):
@@ -142,7 +141,7 @@ class OptionApp:
 
     def _set_base_asset_metrics(self, base_asset):
         if base_asset.last_price:
-            BASE_ASSET_LAST_PRICE_GAUGE.labels(ticker=base_asset.ticker, short_name=base_asset.short_name, base_asset_code=base_asset.base_asset_code).set(base_asset.last_price)
+            BASE_ASSET_LAST_PRICE_GAUGE.labels(ticker=base_asset.ticker, short_name=base_asset.short_name, base_asset_code=base_asset.base_asset_code, strike=base_asset.strike).set(base_asset.last_price)
 
 
     def _set_option_metrics(self, option):

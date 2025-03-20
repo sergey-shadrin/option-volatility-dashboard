@@ -8,6 +8,7 @@ class BaseAsset:
         self._short_name = None
         self._base_asset_code = None
         self._last_price = None
+        self._strike = None
         self._expiration_datetimes = []
 
     @property
@@ -21,6 +22,14 @@ class BaseAsset:
     @last_price.setter
     def last_price(self, last_price):
         self._last_price = last_price
+
+    @property
+    def strike(self):
+        return self._strike
+
+    @strike.setter
+    def strike(self, strike):
+        self._strike = strike
 
     @property
     def expiration_datetimes(self):
