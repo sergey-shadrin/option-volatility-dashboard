@@ -7,18 +7,18 @@ _PRECISION_DIGITS_COUNT = 5
 def get_list_of_strikes(base_asset_price, strike_step, strikes_count):
     central_strike = _calculate_central_strike(base_asset_price, strike_step)
     strikes_before_count = strikes_count // 2
-    first_strike = _round_strike(central_strike - strikes_before_count * strike_step)
+    first_strike = round_strike(central_strike - strikes_before_count * strike_step)
     strikes = []
     for i in range(strikes_count):
-        strikes.append(_round_strike(first_strike + i * strike_step))
+        strikes.append(round_strike(first_strike + i * strike_step))
 
     return central_strike, strikes
 
 
 # Центральный страйк - наиболее близкий к цене базового актива с учётом заданного шага цены страйков
 def _calculate_central_strike(base_asset_price, strike_step):
-    return _round_strike(round(base_asset_price / strike_step) * strike_step)
+    return round_strike(round(base_asset_price / strike_step) * strike_step)
 
 
-def _round_strike(value):
+def round_strike(value):
     return round(value, ndigits=_PRECISION_DIGITS_COUNT)
