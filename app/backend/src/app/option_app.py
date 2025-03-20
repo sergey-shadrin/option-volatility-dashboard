@@ -12,7 +12,7 @@ from view.flask_app import get_flask_app
 from datetime import datetime
 from infrastructure import moex_api, env_utils
 
-BASE_ASSET_LAST_PRICE_GAUGE = Gauge('base_asset_last_price', 'Last price of base asset', ['ticker', 'short_name', 'base_asset_code', 'strike'])
+BASE_ASSET_LAST_PRICE_GAUGE = Gauge('base_asset_last_price', 'Last price of base asset', ['base_asset_ticker', 'short_name', 'base_asset_code', 'strike'])
 OPTION_VOLATILITY_GAUGE = Gauge('option_volatility', 'Option volatility', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
 OPTION_ASK_GAUGE = Gauge('option_ask', 'Option ask', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
 OPTION_ASK_IV_GAUGE = Gauge('option_ask_iv', 'Option ask implied volatility', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
@@ -141,7 +141,7 @@ class OptionApp:
 
     def _set_base_asset_metrics(self, base_asset):
         if base_asset.last_price:
-            BASE_ASSET_LAST_PRICE_GAUGE.labels(ticker=base_asset.ticker, short_name=base_asset.short_name, base_asset_code=base_asset.base_asset_code, strike=base_asset.strike).set(base_asset.last_price)
+            BASE_ASSET_LAST_PRICE_GAUGE.labels(base_asset_ticker=base_asset.ticker, short_name=base_asset.short_name, base_asset_code=base_asset.base_asset_code, strike=base_asset.strike).set(base_asset.last_price)
 
 
     def _set_option_metrics(self, option):
