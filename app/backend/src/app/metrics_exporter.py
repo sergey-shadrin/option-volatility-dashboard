@@ -20,7 +20,7 @@ def set_base_asset_metrics(base_asset):
 
 def set_option_metrics(option):
     formatted_strike = _format_strike_string(option.strike)
-    expiration_date = option.expiration_datetime.strftime("%d.%m.%y")
+    expiration_date = option.expiration_datetime.strftime("%Y-%m-%d")
     if option.volatility:
         OPTION_VOLATILITY_GAUGE.labels(ticker=option.ticker, strike=formatted_strike, type=option.type,
                                        base_asset_ticker=option.base_asset_ticker,
