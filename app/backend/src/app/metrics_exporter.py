@@ -20,42 +20,43 @@ def set_base_asset_metrics(base_asset):
 
 def set_option_metrics(option):
     formatted_strike = _format_strike_string(option.strike)
+    expiration_date = option.expiration_datetime.strftime("%d.%m.%y")
     if option.volatility:
         OPTION_VOLATILITY_GAUGE.labels(ticker=option.ticker, strike=formatted_strike, type=option.type,
                                        base_asset_ticker=option.base_asset_ticker,
-                                       expiration_datetime=option.expiration_datetime.isoformat()).set(
+                                       expiration_datetime=expiration_date).set(
             option.volatility)
 
     if option.ask:
         OPTION_ASK_GAUGE.labels(ticker=option.ticker, strike=formatted_strike, type=option.type,
                                 base_asset_ticker=option.base_asset_ticker,
-                                expiration_datetime=option.expiration_datetime.isoformat()).set(option.ask)
+                                expiration_datetime=expiration_date).set(option.ask)
 
     if option.ask_iv:
         OPTION_ASK_IV_GAUGE.labels(ticker=option.ticker, strike=formatted_strike, type=option.type,
                                    base_asset_ticker=option.base_asset_ticker,
-                                   expiration_datetime=option.expiration_datetime.isoformat()).set(option.ask_iv)
+                                   expiration_datetime=expiration_date).set(option.ask_iv)
 
     if option.bid:
         OPTION_BID_GAUGE.labels(ticker=option.ticker, strike=formatted_strike, type=option.type,
                                 base_asset_ticker=option.base_asset_ticker,
-                                expiration_datetime=option.expiration_datetime.isoformat()).set(option.bid)
+                                expiration_datetime=expiration_date).set(option.bid)
 
     if option.bid_iv:
         OPTION_BID_IV_GAUGE.labels(ticker=option.ticker, strike=formatted_strike, type=option.type,
                                    base_asset_ticker=option.base_asset_ticker,
-                                   expiration_datetime=option.expiration_datetime.isoformat()).set(option.bid_iv)
+                                   expiration_datetime=expiration_date).set(option.bid_iv)
 
     if option.last_price:
         OPTION_LAST_PRICE_GAUGE.labels(ticker=option.ticker, strike=formatted_strike, type=option.type,
                                        base_asset_ticker=option.base_asset_ticker,
-                                       expiration_datetime=option.expiration_datetime.isoformat()).set(
+                                       expiration_datetime=expiration_date).set(
             option.last_price)
 
     if option.last_price_iv:
         OPTION_LAST_PRICE_IV_GAUGE.labels(ticker=option.ticker, strike=formatted_strike, type=option.type,
                                           base_asset_ticker=option.base_asset_ticker,
-                                          expiration_datetime=option.expiration_datetime.isoformat()).set(
+                                          expiration_datetime=expiration_date).set(
             option.last_price_iv)
 
 
