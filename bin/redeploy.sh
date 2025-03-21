@@ -8,5 +8,5 @@ PROJECT_DIR="$(dirname "$(readlink -f "$0")")"
 cd "${PROJECT_DIR}"
 
 docker compose pull && \
-  docker compose down && \
+  docker rm -f backend frontend && \
   docker compose up -d
