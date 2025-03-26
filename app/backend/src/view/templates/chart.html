@@ -4,8 +4,10 @@
     <meta charSet="utf-8"/>
     <link type="text/css" rel="stylesheet" href="/static/style.css" >
   </head>
-  <body style="background: black;">
-    <h2>{{ base_asset_ticker }}</h2>
+  <body>
+    {% if not is_embed %}
+      <h2>{{ base_asset_ticker }}</h2>
+    {% endif %}
     <div class="legend_container" id="legend-container"></div>
     <div>
       <canvas id="volatilityChart"></canvas>

@@ -9,6 +9,7 @@ from infrastructure import env_utils
 from prometheus_client import make_wsgi_app
 
 _BASE_ASSET_TICKER_QUERY_PARAM = 'base_asset_ticker'
+_EMBED_QUERY_PARAM = 'embed'
 
 class FlaskApp:
     def __init__(self):
@@ -35,11 +36,12 @@ class FlaskApp:
 
     def get_chart_html(self):
         base_asset_ticker = request.args.get(_BASE_ASSET_TICKER_QUERY_PARAM)
+        is_embed = request.args.get(_EMBED_QUERY_PARAM) == 'true'
         if base_asset_ticker not in supported_base_asset.MAP:
             error_message = f'Тикер ({base_asset_ticker}) не поддерживается. Ниже ссылки на диаграммы по поддерживаемым тикерам.'
             result = self.get_index_html(error_message=error_message)
         else:
-            result = flask.render_template('chart.html', base_asset_ticker=base_asset_ticker)
+            result = flask.render_template('chart.html', base_asset_ticker=base_asset_ticker, is_embed=is_embed)
         return result
 
     def get_chart_json(self):
