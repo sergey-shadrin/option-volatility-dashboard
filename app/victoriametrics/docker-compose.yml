@@ -1,0 +1,22 @@
+services:
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:v1.112.0
+    container_name: victoriametrics
+    restart: unless-stopped
+    volumes:
+     - ./data/victoria-metrics-data:/victoria-metrics-data
+     - ./scrape.yaml:/scrape.yaml
+    ports:
+     - "8428:8428"
+    command:
+      - "-storageDataPath=/victoria-metrics-data"
+      - "-httpListenAddr=:8428"
+      - "-retentionPeriod=2d"
+      - "-promscrape.config=/scrape.yaml"
+    networks:
+      - option_volatility_dashboard
+
+networks:
+  option_volatility_dashboard:
+    external: true
+    name: option_volatility_dashboard
