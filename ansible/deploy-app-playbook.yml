@@ -1,7 +1,35 @@
 ---
-- name: Dump host facts
+- name: Deploy App
   hosts: all
+  become: yes
+
+  vars:
+    local_compose_file: "../app/{{ app }}/docker-compose.yml"
+    remote_dir: "/opt/option_volatility_dashboard/{{ app }}"
+    remote_compose_file: "{{ remote_dir }}/docker-compose.yml"
+
   tasks:
-    - name: Display all host facts
-      ansible.builtin.debug:
-        var: ansible_facts
+    - name: Create {{ app }} directory
+      file:
+        path: "{{ remote_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Copy docker-compose file
+      copy:
+        src: "{{ local_compose_file }}"
+        dest: "{{ remote_compose_file }}"
+        mode: '0644'
+
+    - name: Run Docker Compose
+      shell: |
+        cd {{ remote_dir }} && \
+        docker compose pull && \
+        docker compose down -t 1 && \
+        docker compose up -d
+      register: compose_result
+      changed_when: "'Creating' in compose_result.stdout or 'Pulling' in compose_result.stdout"
+
+    - name: Show compose output
+      debug:
+        var: compose_result.stdout_lines

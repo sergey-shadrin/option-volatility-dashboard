@@ -6,36 +6,7 @@ on:
     paths:
       - 'app/backend/src/**'
 jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-#      - name: Login to Docker Hub
-#        uses: docker/login-action@v3
-#        with:
-#          username: shadrinsergey
-#          password: ${{ secrets.DOCKERHUB_TOKEN }}
-#
-#      - name: Build runtime docker image backend
-#        run: ./bin/build-runtime-image.sh backend
-#
-#      - name: Push runtime docker image backend
-#        run: ./bin/push-runtime-image.sh backend
-
-      - name: Install Ansible
-        run: sudo apt-get update && sudo apt-get install -y ansible
-
-      - name: Display Ansible version
-        run: ansible --version
-
-      - name: Run playbook
-        uses: dawidd6/action-ansible-playbook@v3
-        with:
-          playbook: ansible/deploy-app-playbook.yml
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          options: |
-            --user "${{ secrets.REMOTE_USER }}"
-            --inventory "${{ secrets.REMOTE_HOST }},"
-            --verbose
+  call-build-and-deploy:
+    uses: ./.github/workflows/build-and-deploy-app.yml
+    with:
+      app: "backend"

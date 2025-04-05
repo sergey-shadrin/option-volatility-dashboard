@@ -1,0 +1,16 @@
+---
+- name: Bootstrap host for apps
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Ensure Docker service is running
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Create docker network
+      shell: |
+        docker network create option_volatility_dashboard
+      ignore_errors: yes
