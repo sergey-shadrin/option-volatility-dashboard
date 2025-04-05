@@ -1,0 +1,12 @@
+services:
+  frontend:
+    image: shadrinsergey/option_volatility_dashboard_frontend:0.0.1
+    container_name: frontend
+    restart: unless-stopped
+    networks:
+      - option_volatility_dashboard
+
+networks:
+  option_volatility_dashboard:
+    external: true
+    name: option_volatility_dashboard

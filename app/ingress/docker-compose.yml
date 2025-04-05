@@ -1,0 +1,20 @@
+services:
+  ingress:
+    image: nginx:1.25.5-bookworm
+    container_name: ingress
+    restart: unless-stopped
+    volumes:
+     - ./templates:/etc/nginx/templates
+     - ./ssl:/etc/nginx/ssl
+    ports:
+     - '80:80'
+     - "443:443"
+    environment:
+      - NGINX_HOST=${HOST}
+    networks:
+      - option_volatility_dashboard
+
+networks:
+  option_volatility_dashboard:
+    external: true
+    name: option_volatility_dashboard

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html class="{% if is_embed %}embed{% endif %}">
   <head>
     <meta charSet="utf-8"/>
     <link type="text/css" rel="stylesheet" href="/static/style.css" >
@@ -9,7 +9,7 @@
       <h2>{{ base_asset_ticker }}</h2>
     {% endif %}
     <div class="legend_container" id="legend-container"></div>
-    <div>
+    <div class="chart_container">
       <canvas id="volatilityChart"></canvas>
     </div>
 
