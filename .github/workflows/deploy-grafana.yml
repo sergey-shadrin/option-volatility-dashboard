@@ -1,4 +1,4 @@
-name: Build and deploy backend
+name: Deploy grafana
 on:
   workflow_dispatch:
 jobs:
