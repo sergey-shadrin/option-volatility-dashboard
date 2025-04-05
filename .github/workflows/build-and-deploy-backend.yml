@@ -31,12 +31,11 @@ jobs:
         run: ansible --version
 
       - name: Run playbook
-        env:
-          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
         uses: dawidd6/action-ansible-playbook@v3
         with:
           playbook: ansible/deploy-app-playbook.yml
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           options: |
+            --user "${{ secrets.REMOTE_USER }}"
             --inventory "${{ secrets.REMOTE_HOST }},"
             --verbose
