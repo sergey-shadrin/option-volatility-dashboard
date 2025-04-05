@@ -1,15 +1,13 @@
-name: Build Runtime Docker Images And Redeploy
-
+name: Build and deploy backend app
 on:
+  workflow_dispatch:
   push:
-    branches: [ "master" ]
-
+    branches: ["master"]
+    paths:
+      - 'app/backend/src/**'
 jobs:
-
-  build:
-
+  build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -23,19 +21,20 @@ jobs:
       - name: Build runtime docker image backend
         run: ./bin/build-runtime-image.sh backend
 
-      - name: Build runtime docker image frontend
-        run: ./bin/build-runtime-image.sh frontend
-
       - name: Push runtime docker image backend
         run: ./bin/push-runtime-image.sh backend
 
-      - name: Push runtime docker image frontend
-        run: ./bin/push-runtime-image.sh frontend
+      - name: Install Ansible
+        run: sudo apt-get update && sudo apt-get install -y ansible
 
-      - name: executing remote ssh commands using ssh key
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Display Ansible version
+        run: ansible --version
+
+      - name: Run playbook
+        uses: dawidd6/action-ansible-playbook@v3
         with:
-          host: ${{ secrets.REMOTE_HOST }}
-          username: ${{ secrets.REMOTE_USER }}
+          playbook: ansible/deploy-app-playbook.yml
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: 'sudo /var/www/redeploy.sh'
+          options: |
+            --inventory '${{ secrets.REMOTE_HOST }}'
+            --verbose
