@@ -1,14 +1,14 @@
-name: Build and deploy backend
+name: Build and deploy frontend
 on:
   workflow_dispatch:
   push:
     branches: ["master"]
     paths:
-      - 'app/backend/src/**'
-      - 'app/backend/docker-compose.yml'
+      - 'app/frontend/src/**'
+      - 'app/frontend/docker-compose.yml'
 jobs:
   call-build-and-deploy:
     uses: ./.github/workflows/build-and-deploy-app.yml
     with:
-      app: "backend"
+      app: "frontend"
     secrets: inherit

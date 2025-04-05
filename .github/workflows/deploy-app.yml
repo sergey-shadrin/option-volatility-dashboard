@@ -1,0 +1,29 @@
+name: Deploy app
+on:
+  workflow_call:
+    inputs:
+      app:
+        required: true
+        type: string
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Ansible
+        run: sudo apt-get update && sudo apt-get install -y ansible
+
+      - name: Display Ansible version
+        run: ansible --version
+
+      - name: Run playbook
+        uses: dawidd6/action-ansible-playbook@v3
+        with:
+          playbook: ansible/deploy-app.yml
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          options: |
+            --user "${{ secrets.REMOTE_USER }}"
+            --inventory "${{ secrets.REMOTE_HOST }},"
+            --extra-vars "app=${{ inputs.app }}"

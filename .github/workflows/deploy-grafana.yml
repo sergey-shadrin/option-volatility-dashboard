@@ -1,0 +1,9 @@
+name: Build and deploy backend
+on:
+  workflow_dispatch:
+jobs:
+  call-build-and-deploy:
+    uses: ./.github/workflows/deploy-app.yml
+    with:
+      app: "grafana"
+    secrets: inherit
