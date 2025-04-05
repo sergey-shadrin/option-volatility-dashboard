@@ -10,3 +10,4 @@ jobs:
     uses: ./.github/workflows/build-and-deploy-app.yml
     with:
       app: "backend"
+    secrets: inherit
