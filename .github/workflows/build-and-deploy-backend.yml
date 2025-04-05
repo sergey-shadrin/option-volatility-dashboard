@@ -38,5 +38,5 @@ jobs:
           playbook: ansible/deploy-app-playbook.yml
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           options: |
-            --inventory "${REMOTE_HOST}"
+            --inventory "${{ secrets.REMOTE_HOST }},"
             --verbose
