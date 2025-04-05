@@ -12,17 +12,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: shadrinsergey
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build runtime docker image backend
-        run: ./bin/build-runtime-image.sh backend
-
-      - name: Push runtime docker image backend
-        run: ./bin/push-runtime-image.sh backend
+#      - name: Login to Docker Hub
+#        uses: docker/login-action@v3
+#        with:
+#          username: shadrinsergey
+#          password: ${{ secrets.DOCKERHUB_TOKEN }}
+#
+#      - name: Build runtime docker image backend
+#        run: ./bin/build-runtime-image.sh backend
+#
+#      - name: Push runtime docker image backend
+#        run: ./bin/push-runtime-image.sh backend
 
       - name: Install Ansible
         run: sudo apt-get update && sudo apt-get install -y ansible
@@ -31,10 +31,12 @@ jobs:
         run: ansible --version
 
       - name: Run playbook
+        env:
+          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
         uses: dawidd6/action-ansible-playbook@v3
         with:
           playbook: ansible/deploy-app-playbook.yml
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           options: |
-            --inventory '${{ secrets.REMOTE_HOST }}'
+            --inventory "${REMOTE_HOST}"
             --verbose
