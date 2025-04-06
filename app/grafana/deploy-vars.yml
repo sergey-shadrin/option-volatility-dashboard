@@ -1,0 +1,3 @@
+copy_paths:
+  - 'docker-compose.yml'
+  - 'grafana-provisioning'

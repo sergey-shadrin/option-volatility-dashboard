@@ -27,3 +27,4 @@ jobs:
             --user "${{ secrets.REMOTE_USER }}"
             --inventory "${{ secrets.REMOTE_HOST }},"
             --extra-vars "app=${{ inputs.app }}"
+            --extra-vars "@app/${{ inputs.app }}/deploy-vars.yml"

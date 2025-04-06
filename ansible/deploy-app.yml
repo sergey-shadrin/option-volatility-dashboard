@@ -4,9 +4,8 @@
   become: yes
 
   vars:
-    local_compose_file: "../app/{{ app }}/docker-compose.yml"
+    local_dir: "../app/{{ app }}"
     remote_dir: "/opt/option_volatility_dashboard/{{ app }}"
-    remote_compose_file: "{{ remote_dir }}/docker-compose.yml"
 
   tasks:
     - name: Create {{ app }} directory
@@ -15,11 +14,12 @@
         state: directory
         mode: '0755'
 
-    - name: Copy docker-compose file
+    - name: Copy files
       copy:
-        src: "{{ local_compose_file }}"
-        dest: "{{ remote_compose_file }}"
+        src: "{{ local_dir }}/{{ item }}"
+        dest: "{{ remote_dir }}/{{ item }}"
         mode: '0644'
+      loop: "{{ copy_paths }}"
 
     - name: Run Docker Compose
       shell: |
