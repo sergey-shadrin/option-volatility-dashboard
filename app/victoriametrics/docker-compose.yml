@@ -5,14 +5,14 @@ services:
     restart: unless-stopped
     volumes:
      - ./data/victoria-metrics-data:/victoria-metrics-data
-     - ./scrape.yaml:/scrape.yaml
+     - ./scrape.yml:/scrape.yml
     ports:
      - "8428:8428"
     command:
       - "-storageDataPath=/victoria-metrics-data"
       - "-httpListenAddr=:8428"
       - "-retentionPeriod=2d"
-      - "-promscrape.config=/scrape.yaml"
+      - "-promscrape.config=/scrape.yml"
     networks:
       - option_volatility_dashboard
 
