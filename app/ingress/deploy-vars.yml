@@ -1,3 +1,5 @@
 copy_paths:
   - 'docker-compose.yml'
   - 'templates/'
+  - '.env.dist'
+  - 'docker-compose.override.yml.dist'

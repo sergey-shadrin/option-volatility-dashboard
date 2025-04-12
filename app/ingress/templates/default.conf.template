@@ -17,8 +17,8 @@ server {
     listen 443 ssl;
     server_name _;
 
-    ssl_certificate     /etc/nginx/ssl/tls.crt;
-    ssl_certificate_key /etc/nginx/ssl/tls.key;
+    ssl_certificate     ${SSL_CERT_PATH};
+    ssl_certificate_key ${SSL_KEY_PATH};
 
     return 301 https://${NGINX_HOST}$request_uri;
 }
@@ -27,8 +27,8 @@ server {
     listen        443 ssl;
     server_name   ${NGINX_HOST};
 
-    ssl_certificate     /etc/nginx/ssl/tls.crt;
-    ssl_certificate_key /etc/nginx/ssl/tls.key;
+    ssl_certificate     ${SSL_CERT_PATH};
+    ssl_certificate_key ${SSL_KEY_PATH};
 
     server_tokens off;
 
