@@ -32,6 +32,10 @@ server {
 
     server_tokens off;
 
+    location /.well-known {
+        root /letsencrypt/html;
+    }
+
     location / {
         proxy_pass http://frontend;
         proxy_redirect     off;

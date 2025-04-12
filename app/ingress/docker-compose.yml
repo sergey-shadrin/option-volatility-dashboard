@@ -6,6 +6,7 @@ services:
     volumes:
      - ./templates:/etc/nginx/templates
      - ./ssl:/etc/nginx/ssl
+     - ./letsencrypt/html:/letsencrypt/html
     ports:
      - '80:80'
      - "443:443"
