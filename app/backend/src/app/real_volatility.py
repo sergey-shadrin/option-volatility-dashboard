@@ -19,6 +19,8 @@ def get_real_volatility(option: Option) -> float:
             elif (option.ask_iv < option.volatility and option.bid_iv < option.volatility and
                   option.ask_iv < option.volatility or option.volatility < option.bid_iv):  # вне пределов спреда bid-ask
                 real_vol = (option.ask_iv + option.bid_iv) / 2
+                if real_vol > option.volatility * 2 or real_vol < option.volatility / 2:
+                    real_vol = option.volatility
     return real_vol
 
 def is_last_price_timestamp_actual(last_price_timestamp) -> bool:
