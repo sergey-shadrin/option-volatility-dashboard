@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class Option:
@@ -27,7 +27,7 @@ class Option:
         return self._base_asset_ticker
 
     def get_time_to_maturity(self) -> float:
-        difference = self._expiration_datetime - datetime.utcnow()
+        difference = self._expiration_datetime - datetime.now(timezone.utc)
         seconds_in_year = 365 * 24 * 60 * 60
         return difference.total_seconds() / seconds_in_year
 

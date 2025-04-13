@@ -1,4 +1,4 @@
-from datetime import datetime, time
+from datetime import datetime, time, timezone
 
 from model import option_series_type
 
@@ -14,31 +14,32 @@ _CURRENCY_QUARTER_OPTION_EXPIRATION_TIME_UTC = time(11, 0)  # 14:00 in MSK
 
 
 def is_trading_session_active_now() -> bool:
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     return _is_datetime_in_today_daily_session(now) or _is_datetime_in_today_evening_session(now)
 
 
-def is_datetime_in_current_trading_session(datetime_to_check: datetime) -> bool:
-    now = datetime.utcnow()
+def is_timestamp_in_current_trading_session(timestamp) -> bool:
+    datetime_to_check = datetime.fromtimestamp(timestamp).astimezone(timezone.utc)
+    now = datetime.now(timezone.utc)
     is_in_daily_session = _is_datetime_in_today_daily_session(now) and _is_datetime_in_today_daily_session(datetime_to_check)
     is_in_evening_session = _is_datetime_in_today_evening_session(now) and _is_datetime_in_today_evening_session(datetime_to_check)
     return is_in_daily_session or is_in_evening_session
 
 
 def get_option_expiration_datetime(base_asset_code: str, series_type: str, expiration_date_str: str):
-    expiration_date = datetime.fromisoformat(expiration_date_str)
+    expiration_date = datetime.fromisoformat(expiration_date_str).astimezone(timezone.utc)
 
-    expiration_datetime = datetime.combine(expiration_date, _DEFAULT_OPTION_EXPIRATION_TIME_UTC)
+    expiration_datetime = datetime.combine(expiration_date, _DEFAULT_OPTION_EXPIRATION_TIME_UTC, tzinfo=timezone.utc)
     currency_base_asset_codes = ('Si', 'Eu', 'Cn')
     if base_asset_code in currency_base_asset_codes and series_type == option_series_type.QUARTER:
-        expiration_datetime = datetime.combine(expiration_date, _CURRENCY_QUARTER_OPTION_EXPIRATION_TIME_UTC)
+        expiration_datetime = datetime.combine(expiration_date, _CURRENCY_QUARTER_OPTION_EXPIRATION_TIME_UTC, tzinfo=timezone.utc)
 
     return expiration_datetime
 
 
 def _get_today_datetime(time_position: time) -> datetime:
     current_date = datetime.today().date()
-    return datetime.combine(current_date, time_position)
+    return datetime.combine(current_date, time_position, tzinfo=timezone.utc)
 
 
 def _get_today_daily_session_start_datetime() -> datetime:

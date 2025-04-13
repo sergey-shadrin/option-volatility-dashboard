@@ -8,7 +8,6 @@ from model.option import Option
 from model.option_model import OptionModel
 from model.watched_instruments_filter import WatchedInstrumentsFilter
 from view.flask_app import get_flask_app
-from datetime import datetime
 from infrastructure import moex_api, env_utils
 
 class OptionApp:
@@ -67,8 +66,7 @@ class OptionApp:
         option.bid = data['bid']
 
         if option.last_price is not None and option.last_price_timestamp is not None:
-            last_price_timestamp_datetime = datetime.fromtimestamp(option.last_price_timestamp)
-            if trading_session_time.is_datetime_in_current_trading_session(last_price_timestamp_datetime):
+            if trading_session_time.is_timestamp_in_current_trading_session(option.last_price_timestamp):
                 # Вычисляем новую волатильность по цене последней сделки,
                 # если сделка совершалась в текущую торговую сессию
                 if prev_last_price_timestamp_of_option is None or prev_last_price_timestamp_of_option != option.last_price_timestamp:
