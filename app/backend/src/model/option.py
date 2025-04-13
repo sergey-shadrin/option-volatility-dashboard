@@ -16,6 +16,7 @@ class Option:
         self._bid_iv = None
         self._ask_iv = None
         self._last_price_iv = None
+        self._real_vol = None
 
     @property
     def ticker(self):
@@ -105,3 +106,12 @@ class Option:
     @last_price_iv.setter
     def last_price_iv(self, last_price_iv):
         self._last_price_iv = last_price_iv
+
+    @property
+    def real_vol(self):
+        return self._real_vol
+
+    @real_vol.setter
+    def real_vol(self, real_vol):
+        self._real_vol = real_vol
+

@@ -8,6 +8,7 @@ OPTION_BID_GAUGE = Gauge('option_bid', 'Option bid', ['ticker', 'strike', 'type'
 OPTION_BID_IV_GAUGE = Gauge('option_bid_iv', 'Option bid implied volatility', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
 OPTION_LAST_PRICE_GAUGE = Gauge('option_last_price', 'Option last price', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
 OPTION_LAST_PRICE_IV_GAUGE = Gauge('option_last_price_iv', 'Option last price implied volatility', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
+OPTION_REAL_VOL_GAUGE = Gauge('option_real_vol', 'Option real volatility', ['ticker', 'strike', 'type', 'base_asset_ticker', 'expiration_datetime'])
 CENTRAL_STRIKE_GAUGE = Gauge('central_strike', 'Central strike', ['base_asset_ticker'])
 
 
@@ -58,6 +59,12 @@ def set_option_metrics(option):
                                           base_asset_ticker=option.base_asset_ticker,
                                           expiration_datetime=expiration_date).set(
             option.last_price_iv)
+
+    if option.real_vol:
+        OPTION_REAL_VOL_GAUGE.labels(ticker=option.ticker, strike=formatted_strike, type=option.type,
+                                          base_asset_ticker=option.base_asset_ticker,
+                                          expiration_datetime=expiration_date).set(
+            option.real_vol)
 
 
 def _format_strike_string(strike):

@@ -1,5 +1,6 @@
 from app import trading_session_time, supported_base_asset, central_strike_calculator, metrics_exporter
 from app.implied_volatility import get_iv_for_option_price
+from app.real_volatility import get_real_volatility
 from infrastructure.alor_api import AlorApi
 from model import option_type
 from model.base_asset import BaseAsset
@@ -88,11 +89,14 @@ class OptionApp:
         if option.bid:
             option.bid_iv = get_iv_for_option_price(base_asset_last_price, option,
                                                     option.bid)
+
+        option.real_vol = get_real_volatility(option)
         metrics_exporter.set_option_metrics(option)
 
     def _handle_option_instrument_event(self, ticker, data):
         option = self._model.option_repository.get_by_ticker(ticker)
         option.volatility = data['volatility']
+        option.real_vol = get_real_volatility(option)
         metrics_exporter.set_option_metrics(option)
 
     def _recalculate_volatilities(self, base_asset):
@@ -105,6 +109,7 @@ class OptionApp:
                                                     option.ask)
             option.bid_iv = get_iv_for_option_price(base_asset.last_price, option,
                                                     option.bid)
+            option.real_vol = get_real_volatility(option)
             metrics_exporter.set_option_metrics(option)
 
     def _start_flask_app(self):
