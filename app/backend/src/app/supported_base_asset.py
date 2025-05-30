@@ -7,12 +7,12 @@ MAP = {
         'strike_step': 1000,
         'max_strikes_count': 15,
     },
-    'CRM5': {
-        'strike_step': 0.25,
+    'RIU5': {
+        'strike_step': 2500,
         'max_strikes_count': 15,
     },
-    'GZM5': {
-        'strike_step': 250,
+    'SiU5': {
+        'strike_step': 1000,
         'max_strikes_count': 15,
     },
     'SRM5': {
