@@ -1,12 +1,4 @@
 MAP = {
-    'RIU5': {
-        'strike_step': 2500,
-        'max_strikes_count': 15,
-    },
-    'SiU5': {
-        'strike_step': 1000,
-        'max_strikes_count': 15,
-    },
     'RIZ5': {
         'strike_step': 2500,
         'max_strikes_count': 15,
@@ -15,7 +7,15 @@ MAP = {
         'strike_step': 1000,
         'max_strikes_count': 15,
     },
-    'SRU5': {
+    'RIH6': {
+        'strike_step': 2500,
+        'max_strikes_count': 15,
+    },
+    'SiH6': {
+        'strike_step': 1000,
+        'max_strikes_count': 15,
+    },
+    'SRZ5': {
         'strike_step': 250,
         'max_strikes_count': 15,
     },
