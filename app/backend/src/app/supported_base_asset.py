@@ -19,4 +19,8 @@ MAP = {
         'strike_step': 250,
         'max_strikes_count': 15,
     },
+    'SRH6': {
+        'strike_step': 250,
+        'max_strikes_count': 15,
+    },
 }
