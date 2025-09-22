@@ -1,0 +1,9 @@
+name: Deploy backend
+on:
+  workflow_dispatch:
+jobs:
+  call-deploy:
+    uses: ./.github/workflows/build-and-deploy-app.yml
+    with:
+      app: "backend"
+    secrets: inherit

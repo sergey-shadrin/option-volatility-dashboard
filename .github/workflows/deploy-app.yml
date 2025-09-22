@@ -1,6 +1,5 @@
 name: Deploy app
 on:
-  workflow_dispatch:
   workflow_call:
     inputs:
       app:
