@@ -5,5 +5,5 @@ jobs:
   call-deploy:
     uses: ./.github/workflows/build-app.yml
     with:
-      app: "backend"
+      app: "frontend"
     secrets: inherit
