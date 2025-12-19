@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
 jobs:
   call-deploy:
-    uses: ./.github/workflows/build-app.yml
+    uses: ./.github/workflows/deploy-app.yml
     with:
       app: "frontend"
     secrets: inherit
