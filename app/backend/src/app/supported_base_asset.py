@@ -1,7 +1,7 @@
 MAP = {
     'RIH6': {
         'strike_step': 2500,
-        'max_strikes_count': 16,
+        'max_strikes_count': 18,
     },
     'SiH6': {
         'strike_step': 1000,
@@ -9,7 +9,7 @@ MAP = {
     },
     'RIM6': {
         'strike_step': 2500,
-        'max_strikes_count': 16,
+        'max_strikes_count': 18,
     },
     'SiM6': {
         'strike_step': 1000,
