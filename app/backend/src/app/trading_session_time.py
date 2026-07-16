@@ -4,7 +4,7 @@ from model import option_series_type
 
 # For reference see https://www.moex.com/ru/derivatives/
 
-_DAILY_SESSION_START_TIME_UTC = time(6, 0)     # 9:00 in MSK
+_DAILY_SESSION_START_TIME_UTC = time(4, 0)     # 9:00 in MSK
 _EVENING_SESSION_START_TIME_UTC = time(16, 5)  # 19:05 in MSK
 _EVENING_SESSION_END_TIME_UTC = time(20, 50)   # 23:50 in MSK
 
