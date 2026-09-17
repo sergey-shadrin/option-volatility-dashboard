@@ -1,12 +1,4 @@
 MAP = {
-    'RIU6': {
-        'strike_step': 2500,
-        'max_strikes_count': 18,
-    },
-    'SiU6': {
-        'strike_step': 1000,
-        'max_strikes_count': 16,
-    },
     'RIZ6': {
         'strike_step': 2500,
         'max_strikes_count': 18,
@@ -15,11 +7,19 @@ MAP = {
         'strike_step': 1000,
         'max_strikes_count': 16,
     },
-    'SRU6': {
-        'strike_step': 250,
+    'RIH7': {
+        'strike_step': 2500,
+        'max_strikes_count': 18,
+    },
+    'SiH7': {
+        'strike_step': 1000,
         'max_strikes_count': 16,
     },
     'SRZ6': {
+        'strike_step': 250,
+        'max_strikes_count': 16,
+    },
+    'SRH7': {
         'strike_step': 250,
         'max_strikes_count': 16,
     },
