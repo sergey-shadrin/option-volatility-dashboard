@@ -5,7 +5,10 @@ on:
     branches: ["master"]
     paths:
       - 'app/backend/src/**'
+      - 'app/backend/docker/**'
       - 'app/backend/docker-compose.yml'
+      - 'app/backend/requirements.txt'
+      - 'app/backend/build.env'
 jobs:
   call-build-and-deploy:
     uses: ./.github/workflows/build-and-deploy-app.yml
