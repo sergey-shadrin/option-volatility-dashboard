@@ -53,6 +53,18 @@ Cредство для отображения диаграммы волатил�
 
 Подробнее см. `bin/build-all.sh`
 
+base- и builder-образы собираются локально и публикуются вручную, CI собирает только runtime-образ
+поверх уже опубликованного base (`app/<app>/build.env`, переменная `BASE_IMAGE_NAME`).
+При изменении `app/<app>/docker/Base.Dockerfile` или `requirements.txt` нужно поднять тег в `build.env`,
+пересобрать и опубликовать base-образ:
+
+```
+./bin/build-base-image.sh backend
+./bin/push-base-image.sh backend
+```
+
+Если тег не поднять, CI продолжит собирать runtime поверх ранее опубликованного base-слоя.
+
 ## Развертывание
 
 ### Обновить набор базовых активов
